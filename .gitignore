@@ -1,0 +1,30 @@
+# Build output
+target/
+build/
+out/
+*.class
+*.jar
+
+# Node
+node_modules/
+.next/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Secrets and local config. Never commit these.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+application-local.*
+
+# Local data
+*.log
+/data/
+/media/
