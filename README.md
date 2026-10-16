@@ -7,8 +7,8 @@
 ![Java 25](https://img.shields.io/badge/Java-25-informational)
 ![Spring Boot 4.1](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F)
 
-> **Status: pre-alpha.** The architecture is documented and the first
-> decisions are recorded; application code is not written yet. No
+> **Status: pre-alpha.** The architecture is documented and the build
+> skeleton exists; no product features are written yet. No
 > performance, cost or accuracy claim is made until it is measured, with
 > hardware and method stated. See the [roadmap](docs/ROADMAP.md).
 
@@ -56,6 +56,7 @@ Key decisions, each with rejected alternatives:
 - [ADR 0003](docs/adr/0003-postgres-backed-job-queue.md): one shared PostgreSQL-backed job queue
 - [ADR 0004](docs/adr/0004-asr-evaluation-datasets.md): how ASR quality is measured
 - [ADR 0005](docs/adr/0005-database-structure.md): database structure; see the [draft schema](docs/schema.md)
+- [ADR 0006](docs/adr/0006-maven-build.md): Maven build
 
 ## Engineering standards
 
@@ -87,7 +88,15 @@ client serves as the test harness; the backend is the product.
 
 ## Getting started
 
-Not available yet. Build and run instructions arrive with ticket T0.1.
+Requires JDK 25. No other tool is needed; the Maven Wrapper downloads Maven.
+
+```bash
+./mvnw verify          # build, run tests, verify module boundaries
+./mvnw spring-boot:run # start the app, then GET /actuator/health
+```
+
+The application currently has no features: it is the skeleton with the
+seven modules, health endpoint and boundary checks (ticket T0.1).
 
 ## License
 

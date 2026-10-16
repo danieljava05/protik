@@ -6,10 +6,12 @@ foundations that other work depends on come first. Nothing below is
 done yet.
 
 ## Milestone 0: Foundations
-- [ ] T0.1 Gradle/Maven build, Spring Boot skeleton, Testcontainers,
-      CI (build + test + Modulith verification)
-- [ ] T0.2 Flyway baseline, correlation IDs, RFC 9457 error handling,
-      OpenAPI generation
+- [x] T0.1 Maven build, Spring Boot skeleton, CI, Modulith boundary
+      verification ([ADR 0006](adr/0006-maven-build.md)). Testcontainers
+      moved to T0.2: T0.1 has no database code, so it would be an unused
+      dependency.
+- [ ] T0.2 Testcontainers, Flyway baseline, correlation IDs, RFC 9457
+      error handling, OpenAPI generation
 - [ ] T0.3 Shared job queue (ADR 0003) with concurrency tests
 
 ## Milestone 1: Identity and upload

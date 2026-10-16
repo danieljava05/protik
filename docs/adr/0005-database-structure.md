@@ -1,6 +1,6 @@
 # ADR 0005: Database structure and conventions
 
-- Status: proposed
+- Status: accepted (identifier decision confirmed by the project owner on 2026-10-17: UUID)
 - Date: 2026-10-17
 
 The logical model is in [docs/schema.md](../schema.md); the validated
