@@ -55,6 +55,7 @@ Key decisions, each with rejected alternatives:
 - [ADR 0002](docs/adr/0002-spring-modulith-for-module-boundaries.md): Spring Modulith for module boundaries and events
 - [ADR 0003](docs/adr/0003-postgres-backed-job-queue.md): one shared PostgreSQL-backed job queue
 - [ADR 0004](docs/adr/0004-asr-evaluation-datasets.md): how ASR quality is measured
+- [ADR 0005](docs/adr/0005-database-structure.md): database structure; see the [draft schema](docs/schema.md)
 
 ## Engineering standards
 
