@@ -14,7 +14,8 @@ done yet.
       ([ADR 0007](adr/0007-per-module-migrations.md)), correlation IDs,
       RFC 9457 error handling, OpenAPI generation, docker-compose for
       PostgreSQL (Redis and MinIO join when a ticket uses them)
-- [ ] T0.3 Shared job queue (ADR 0003) with concurrency tests
+- [x] T0.3 Shared job queue ([ADR 0003](adr/0003-postgres-backed-job-queue.md),
+      [ADR 0008](adr/0008-job-queue-semantics.md)) with concurrency tests
 
 ## Milestone 1: Identity and upload
 - [ ] T1.1 Registration, Argon2 password hashing, JWT access tokens

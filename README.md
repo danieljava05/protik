@@ -58,6 +58,7 @@ Key decisions, each with rejected alternatives:
 - [ADR 0005](docs/adr/0005-database-structure.md): database structure; see the [draft schema](docs/schema.md)
 - [ADR 0006](docs/adr/0006-maven-build.md): Maven build
 - [ADR 0007](docs/adr/0007-per-module-migrations.md): one Flyway run per module
+- [ADR 0008](docs/adr/0008-job-queue-semantics.md): job queue delivery, leases and retries
 
 ## Engineering standards
 
