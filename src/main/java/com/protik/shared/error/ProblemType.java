@@ -1,0 +1,38 @@
+package com.protik.shared.error;
+
+import java.net.URI;
+import org.springframework.http.HttpStatus;
+
+/**
+ * Stable, machine-readable error kinds. The {@code type} URI is an identifier
+ * (RFC 9457 allows non-dereferenceable URIs); clients switch on it, never on
+ * the human-readable title or detail.
+ */
+public enum ProblemType {
+    VALIDATION_FAILED("validation-failed", HttpStatus.BAD_REQUEST, "Validation failed"),
+    NOT_FOUND("not-found", HttpStatus.NOT_FOUND, "Resource not found"),
+    CONFLICT("conflict", HttpStatus.CONFLICT, "Conflict"),
+    INTERNAL_ERROR("internal-error", HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
+
+    private final URI type;
+    private final HttpStatus status;
+    private final String title;
+
+    ProblemType(String slug, HttpStatus status, String title) {
+        this.type = URI.create("urn:protik:problem:" + slug);
+        this.status = status;
+        this.title = title;
+    }
+
+    public URI type() {
+        return type;
+    }
+
+    public HttpStatus status() {
+        return status;
+    }
+
+    public String title() {
+        return title;
+    }
+}

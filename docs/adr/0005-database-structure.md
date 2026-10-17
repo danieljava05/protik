@@ -4,7 +4,8 @@
 - Date: 2026-10-17
 
 The logical model is in [docs/schema.md](../schema.md); the validated
-SQL is in [docs/schema-draft/](../schema-draft/). This ADR records the
+SQL is in the per-module migrations under
+`src/main/resources/db/migration/` (ADR 0007). This ADR records the
 structural decisions behind it.
 
 ## Context

@@ -10,8 +10,10 @@ done yet.
       verification ([ADR 0006](adr/0006-maven-build.md)). Testcontainers
       moved to T0.2: T0.1 has no database code, so it would be an unused
       dependency.
-- [ ] T0.2 Testcontainers, Flyway baseline, correlation IDs, RFC 9457
-      error handling, OpenAPI generation
+- [x] T0.2 Testcontainers, per-module Flyway baseline
+      ([ADR 0007](adr/0007-per-module-migrations.md)), correlation IDs,
+      RFC 9457 error handling, OpenAPI generation, docker-compose for
+      PostgreSQL (Redis and MinIO join when a ticket uses them)
 - [ ] T0.3 Shared job queue (ADR 0003) with concurrency tests
 
 ## Milestone 1: Identity and upload

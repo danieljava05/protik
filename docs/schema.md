@@ -1,9 +1,10 @@
 # Logical schema
 
-Status: **draft, validated, not yet migrated.** The source of truth for
-columns, constraints and indexes is [schema-draft/schema.sql](schema-draft/schema.sql),
-checked by [schema-draft/tests.sql](schema-draft/tests.sql) (see its
-[README](schema-draft/README.md)). Structural decisions are in
+Status: **migrated and tested** (ticket T0.2). The source of truth for
+columns, constraints and indexes is the per-module Flyway migrations in
+`src/main/resources/db/migration/<module>/`, checked against a real
+PostgreSQL by `SchemaTests` (see [ADR 0007](adr/0007-per-module-migrations.md)).
+Structural decisions are in
 [ADR 0005](adr/0005-database-structure.md). This page is the map.
 
 Conventions: one PostgreSQL schema per module, UUID primary keys, and a

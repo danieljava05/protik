@@ -57,6 +57,7 @@ Key decisions, each with rejected alternatives:
 - [ADR 0004](docs/adr/0004-asr-evaluation-datasets.md): how ASR quality is measured
 - [ADR 0005](docs/adr/0005-database-structure.md): database structure; see the [draft schema](docs/schema.md)
 - [ADR 0006](docs/adr/0006-maven-build.md): Maven build
+- [ADR 0007](docs/adr/0007-per-module-migrations.md): one Flyway run per module
 
 ## Engineering standards
 
@@ -91,12 +92,16 @@ client serves as the test harness; the backend is the product.
 Requires JDK 25. No other tool is needed; the Maven Wrapper downloads Maven.
 
 ```bash
-./mvnw verify          # build, run tests, verify module boundaries
+docker compose up -d   # PostgreSQL 17 for local development
+./mvnw verify          # build, run tests (needs Docker), verify module boundaries
 ./mvnw spring-boot:run # start the app, then GET /actuator/health
 ```
 
-The application currently has no features: it is the skeleton with the
-seven modules, health endpoint and boundary checks (ticket T0.1).
+Tests start their own throwaway PostgreSQL with Testcontainers, so they
+need Docker but not `docker compose`. The API spec is served at
+`/v3/api-docs`. There are no product features yet: the app is the
+skeleton, the migrated schema, request IDs, RFC 9457 errors and OpenAPI
+(tickets T0.1 and T0.2).
 
 ## License
 

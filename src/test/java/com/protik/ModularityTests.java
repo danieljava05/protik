@@ -21,6 +21,14 @@ class ModularityTests {
     }
 
     @Test
+    void everyModuleHasMigrationsAndNothingElseIsMigrated() {
+        // Guards drift between the code's modules and the migration runner (ADR 0007).
+        Set<String> names = MODULES.stream().map(m -> m.getIdentifier().toString()).collect(Collectors.toSet());
+        assertThat(com.protik.shared.migration.ModuleMigrations.MODULES).containsExactlyInAnyOrderElementsOf(names);
+        assertThat(com.protik.shared.migration.ModuleMigrations.MODULES.getFirst()).isEqualTo("shared");
+    }
+
+    @Test
     void noModuleViolatesBoundariesOrHasCycles() {
         MODULES.verify();
     }
