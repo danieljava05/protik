@@ -20,9 +20,17 @@ done yet.
 ## Milestone 1: Identity and upload
 - [ ] T1.1 Registration, Argon2 password hashing, JWT access tokens
 - [ ] T1.2 Rotating refresh tokens with family revocation on reuse
-- [ ] T1.3 Presigned upload to MinIO, validation, `Idempotency-Key`
+- [ ] T1.3 Presigned upload to MinIO, validation, `Idempotency-Key`.
+      Upload safety (an uploaded file is hostile until proven otherwise):
+      size and type limits at presign time; a quarantine bucket that
+      nothing serves; malware scan (ClamAV) before a file is released;
+      content sniffing that ignores the client-declared type; files are
+      never executed or served from the app's own origin
 - [ ] T1.4 Transcode job: 720p/360p, 144p, audio-only; measure storage
       and compute cost per rendition
+      FFmpeg runs sandboxed: separate non-root container, no network,
+      CPU/memory/time limits, read-only input, and output re-encoded from
+      scratch (the original bytes are never republished)
 
 ## Milestone 2: Transparent feed
 - [ ] T2.1 `Ranker` interface and structured score components
@@ -42,6 +50,14 @@ done yet.
 - [ ] T5.1 Follows, likes, comments; counters with accuracy-under-load
       test
 - [ ] T5.2 Reporting, takedown, audit log, account deletion that deletes
+
+## Supply chain (continuous)
+- [x] Dependabot for Maven and GitHub Actions
+- [ ] After the first push: enable GitHub secret scanning and push
+      protection, add dependency review on pull requests and CodeQL
+      (verify CodeQL supports Java 25 before relying on it)
+- [ ] Pin GitHub Actions to commit SHAs
+- [ ] Image scanning for container builds when a Dockerfile exists
 
 ## Before any public deployment
 - [ ] Legal review (NDPA, child safety, copyright procedure)
