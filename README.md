@@ -77,7 +77,7 @@ Details: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Java 25, Spring Boot 4.1, Spring Modulith, PostgreSQL, Redis, MinIO,
 FFmpeg, Testcontainers, GitHub Actions. A thin Next.js + TypeScript
-client serves as the test harness; the backend is the product.
+client in [web/](web/) serves as the test harness; the backend is the product.
 
 ## Documentation
 
@@ -105,9 +105,15 @@ Tests start their own throwaway PostgreSQL with Testcontainers, so they
 need Docker but not `docker compose`. Without Docker, point them at an empty,
 disposable PostgreSQL 17 database with `PROTIK_TEST_DB_URL` (and `PROTIK_TEST_DB_USER`,
 `PROTIK_TEST_DB_PASSWORD`); tests delete data in it. The API spec is served at
-`/v3/api-docs`. There are no product features yet: the app is the
-skeleton, the migrated schema, request IDs, RFC 9457 errors and OpenAPI
-(tickets T0.1 and T0.2).
+`/v3/api-docs`.
+
+**Try it:** with the database and backend running, start the test harness UI
+(`cd web && npm install && npm run dev`, then open http://localhost:3000) to register,
+log in, call `/v1/me`, and see every request's status, correlation ID and error document.
+
+**What works today:** registration and login (Argon2id, 15-minute JWTs), idempotent retries,
+RFC 9457 errors, request correlation IDs, OpenAPI, the shared job queue. There is no video
+feature yet; see the [roadmap](docs/ROADMAP.md).
 
 ## License
 

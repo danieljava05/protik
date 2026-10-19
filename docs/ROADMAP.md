@@ -58,6 +58,11 @@ done yet.
       test
 - [ ] T5.2 Reporting, takedown, audit log, account deletion that deletes
 
+## Frontend harness
+- [x] Thin Next.js client: register (with idempotent retry), log in, call `/v1/me`, and a request
+      log showing status, correlation ID, replay header and problem documents. Grows with each ticket
+      that adds an endpoint worth exercising.
+
 ## Supply chain (continuous)
 - [x] Dependabot for Maven and GitHub Actions
 - [ ] After the first push: enable GitHub secret scanning and push
