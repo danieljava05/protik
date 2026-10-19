@@ -10,6 +10,9 @@ import org.springframework.http.HttpStatus;
  */
 public enum ProblemType {
     VALIDATION_FAILED("validation-failed", HttpStatus.BAD_REQUEST, "Validation failed"),
+    UNAUTHENTICATED("unauthenticated", HttpStatus.UNAUTHORIZED, "Authentication required"),
+    INVALID_CREDENTIALS("invalid-credentials", HttpStatus.UNAUTHORIZED, "Invalid credentials"),
+    FORBIDDEN("forbidden", HttpStatus.FORBIDDEN, "Forbidden"),
     NOT_FOUND("not-found", HttpStatus.NOT_FOUND, "Resource not found"),
     CONFLICT("conflict", HttpStatus.CONFLICT, "Conflict"),
     IDEMPOTENCY_KEY_REUSED("idempotency-key-reused", HttpStatus.UNPROCESSABLE_CONTENT,

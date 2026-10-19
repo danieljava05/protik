@@ -17,6 +17,8 @@ violations or cycles (proven by a deliberate violation). Decisions so far:
 | ASR measurement protocol (proposed) | [0004](docs/adr/0004-asr-evaluation-datasets.md) |
 | Maven build, Spring Boot 4.1.1, Modulith 2.1.1 | [0006](docs/adr/0006-maven-build.md) |
 | One Flyway run per module, own schema and history | [0007](docs/adr/0007-per-module-migrations.md) |
+| Persistence with `JdbcClient` and explicit SQL, not JPA | [0010](docs/adr/0010-persistence-with-jdbcclient.md) |
+| Argon2id passwords, HS256 15-minute JWT access tokens, stateless, deny by default | [0011](docs/adr/0011-authentication.md) |
 | Idempotency-Key: claim + work + response in one transaction, HMAC fingerprint | [0009](docs/adr/0009-idempotency-keys.md) |
 | Job queue: at-least-once, leases, fencing by attempt, backoff | [0008](docs/adr/0008-job-queue-semantics.md) |
 | Schema per module, UUIDv7 IDs, no cross-module FKs, event-fed counters and read models | [0005](docs/adr/0005-database-structure.md) |
@@ -44,6 +46,18 @@ real threads against PostgreSQL in `JobStoreConcurrencyTests` and
 locked rows; stale-worker fencing; concurrent recovery recovers each job
 exactly once; long jobs keep their lease). Details and rejected options in
 [ADR 0008](docs/adr/0008-job-queue-semantics.md).
+
+## Authentication (T1.1)
+
+`POST /v1/auth/register` creates account, email login, Argon2id credential and profile in one
+transaction (idempotency-key capable); `POST /v1/auth/login` takes a username or email and returns
+a 15-minute HS256 bearer token; `GET /v1/me` proves it. Everything not on an explicit allow-list
+(register, login, health, info, OpenAPI document) needs a valid token: deny by default, stateless,
+no cookies, so CSRF protection is deliberately off. 401/403 are problem documents. Tests cover
+forged, expired, tampered, `alg: none` and foreign-issuer tokens, indistinguishable login failures
+(including a dummy hash verification for unknown accounts), atomic registration under 10 concurrent
+requests, and that passwords never reach logs. Details in
+[ADR 0011](docs/adr/0011-authentication.md).
 
 ## Idempotency
 
@@ -86,6 +100,11 @@ features and no authentication; every endpoint is open. Known gaps:
   concurrency limits, deduplication, or queue-depth metrics. A handler
   that loses its lease keeps running to the end (only its result is
   discarded). Workers poll once per second when idle.
+- Authentication: **no rate limiting or lockout yet (T1.5), so login can be brute-forced and, because
+  Argon2 is memory-heavy, used to exhaust the server; do not deploy publicly before T1.5.** No email
+  verification, password reset, breached-password check, MFA, or token revocation before expiry
+  (refresh tokens arrive in T1.2). HS256 with a shared secret; a lost secret lets anyone mint tokens.
+  Registration reveals whether a username or email exists.
 - Idempotency: anonymous endpoints share one key scope (clients must use random keys); a long
   action holds a lock on its key; stored response bodies must never contain secrets; each new POST
   must call the service explicitly (not automatic).

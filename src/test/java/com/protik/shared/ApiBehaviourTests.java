@@ -67,7 +67,7 @@ class ApiBehaviourTests {
 
     @Test
     void unknownPathIsAProblemDocumentWithCorrelationId() throws Exception {
-        mvc.perform(get("/v1/does-not-exist").header("X-Correlation-Id", "abc-1"))
+        mvc.perform(get("/v1/_test/does-not-exist").header("X-Correlation-Id", "abc-1"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(404))

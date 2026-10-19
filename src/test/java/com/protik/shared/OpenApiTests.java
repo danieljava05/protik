@@ -34,6 +34,9 @@ class OpenApiTests {
     void specDescribesV1EndpointsOnly() throws Exception {
         mvc.perform(get("/v3/api-docs"))
                 .andExpect(jsonPath("$.paths['/v1/_test/api-error']").exists())
+                .andExpect(jsonPath("$.paths['/v1/auth/register']").exists())
+                .andExpect(jsonPath("$.paths['/v1/auth/login']").exists())
+                .andExpect(jsonPath("$.paths['/v1/me']").exists())
                 .andExpect(jsonPath("$.paths['/internal/_test/outside-v1']").doesNotExist())
                 .andExpect(jsonPath("$.paths['/actuator/health']").doesNotExist());
     }

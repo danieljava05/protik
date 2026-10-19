@@ -28,6 +28,7 @@ class ProtikApplicationTests {
 
     @Test
     void endpointsNotExposedAreNotReachable() throws Exception {
-        mockMvc.perform(get("/actuator/env")).andExpect(status().isNotFound());
+        // not exposed, and anonymous callers are turned away before routing
+        mockMvc.perform(get("/actuator/env")).andExpect(status().isUnauthorized());
     }
 }

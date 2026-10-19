@@ -60,6 +60,8 @@ Key decisions, each with rejected alternatives:
 - [ADR 0007](docs/adr/0007-per-module-migrations.md): one Flyway run per module
 - [ADR 0008](docs/adr/0008-job-queue-semantics.md): job queue delivery, leases and retries
 - [ADR 0009](docs/adr/0009-idempotency-keys.md): safe retries with `Idempotency-Key`
+- [ADR 0010](docs/adr/0010-persistence-with-jdbcclient.md): `JdbcClient`, not JPA
+- [ADR 0011](docs/adr/0011-authentication.md): Argon2id passwords and short-lived JWTs
 
 ## Engineering standards
 

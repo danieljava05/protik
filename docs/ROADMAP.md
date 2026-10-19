@@ -21,8 +21,12 @@ done yet.
       registration and upload both need it
 
 ## Milestone 1: Identity and upload
-- [ ] T1.1 Registration, Argon2 password hashing, JWT access tokens
+- [x] T1.1 Registration, Argon2 password hashing, JWT access tokens
+      ([ADR 0010](adr/0010-persistence-with-jdbcclient.md), [ADR 0011](adr/0011-authentication.md))
 - [ ] T1.2 Rotating refresh tokens with family revocation on reuse
+- [ ] T1.5 Login hardening before any public deployment: per-account and per-IP rate limiting
+      and lockout (Argon2 is memory-heavy, so unbounded attempts are a DoS vector), breached-password
+      check, email verification, password reset
 - [ ] T1.3 Presigned upload to MinIO, validation, `Idempotency-Key`.
       Upload safety (an uploaded file is hostile until proven otherwise):
       size and type limits at presign time; a quarantine bucket that
