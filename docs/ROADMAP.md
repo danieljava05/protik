@@ -17,6 +17,9 @@ done yet.
 - [x] T0.3 Shared job queue ([ADR 0003](adr/0003-postgres-backed-job-queue.md),
       [ADR 0008](adr/0008-job-queue-semantics.md)) with concurrency tests
 
+- [x] T0.4 `Idempotency-Key` support ([ADR 0009](adr/0009-idempotency-keys.md)), added because
+      registration and upload both need it
+
 ## Milestone 1: Identity and upload
 - [ ] T1.1 Registration, Argon2 password hashing, JWT access tokens
 - [ ] T1.2 Rotating refresh tokens with family revocation on reuse

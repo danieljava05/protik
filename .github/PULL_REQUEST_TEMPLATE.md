@@ -5,6 +5,7 @@
 ## Definition of Done
 - [ ] Failure paths are tested (not only happy paths)
 - [ ] Concurrency claims are proven by a Testcontainers test
+- [ ] Every new non-idempotent POST uses `IdempotencyService` (or the exception is justified in an ADR)
 - [ ] CI is green
 - [ ] Performance claims are measured, hardware stated
 - [ ] `DESIGN.md` updated, including "What this does not handle"

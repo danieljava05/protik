@@ -12,6 +12,8 @@ public enum ProblemType {
     VALIDATION_FAILED("validation-failed", HttpStatus.BAD_REQUEST, "Validation failed"),
     NOT_FOUND("not-found", HttpStatus.NOT_FOUND, "Resource not found"),
     CONFLICT("conflict", HttpStatus.CONFLICT, "Conflict"),
+    IDEMPOTENCY_KEY_REUSED("idempotency-key-reused", HttpStatus.UNPROCESSABLE_CONTENT,
+            "Idempotency key reused for a different request"),
     INTERNAL_ERROR("internal-error", HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
 
     private final URI type;

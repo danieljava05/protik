@@ -59,6 +59,7 @@ Key decisions, each with rejected alternatives:
 - [ADR 0006](docs/adr/0006-maven-build.md): Maven build
 - [ADR 0007](docs/adr/0007-per-module-migrations.md): one Flyway run per module
 - [ADR 0008](docs/adr/0008-job-queue-semantics.md): job queue delivery, leases and retries
+- [ADR 0009](docs/adr/0009-idempotency-keys.md): safe retries with `Idempotency-Key`
 
 ## Engineering standards
 
@@ -99,7 +100,9 @@ docker compose up -d   # PostgreSQL 17 for local development
 ```
 
 Tests start their own throwaway PostgreSQL with Testcontainers, so they
-need Docker but not `docker compose`. The API spec is served at
+need Docker but not `docker compose`. Without Docker, point them at an empty,
+disposable PostgreSQL 17 database with `PROTIK_TEST_DB_URL` (and `PROTIK_TEST_DB_USER`,
+`PROTIK_TEST_DB_PASSWORD`); tests delete data in it. The API spec is served at
 `/v3/api-docs`. There are no product features yet: the app is the
 skeleton, the migrated schema, request IDs, RFC 9457 errors and OpenAPI
 (tickets T0.1 and T0.2).
