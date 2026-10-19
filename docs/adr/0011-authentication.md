@@ -3,8 +3,8 @@
 - Status: accepted
 - Date: 2026-10-18
 
-Rotating refresh tokens (session families, reuse detection) are ticket T1.2
-and will extend this ADR. This one covers registration, login and access
+Rotating refresh tokens (session families, reuse detection) are in
+[ADR 0012](0012-refresh-tokens-and-sessions.md). This one covers registration, login and access
 tokens.
 
 ## Context

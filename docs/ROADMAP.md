@@ -23,7 +23,8 @@ done yet.
 ## Milestone 1: Identity and upload
 - [x] T1.1 Registration, Argon2 password hashing, JWT access tokens
       ([ADR 0010](adr/0010-persistence-with-jdbcclient.md), [ADR 0011](adr/0011-authentication.md))
-- [ ] T1.2 Rotating refresh tokens with family revocation on reuse
+- [x] T1.2 Rotating refresh tokens with family revocation on reuse
+      ([ADR 0012](adr/0012-refresh-tokens-and-sessions.md))
 - [ ] T1.5 Login hardening before any public deployment: per-account and per-IP rate limiting
       and lockout (Argon2 is memory-heavy, so unbounded attempts are a DoS vector), breached-password
       check, email verification, password reset

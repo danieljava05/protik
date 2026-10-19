@@ -1,11 +1,13 @@
 package com.protik.identity.service;
 
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration(proxyBeanMethods = false)
+@EnableConfigurationProperties(SessionProperties.class)
 class IdentityConfiguration {
 
     /**

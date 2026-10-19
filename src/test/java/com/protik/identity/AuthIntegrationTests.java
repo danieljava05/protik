@@ -396,7 +396,7 @@ class AuthIntegrationTests {
 
     @Test
     void aValidTokenForAnAccountThatNoLongerExistsIsNotFound() throws Exception {
-        String token = tokenService.issue(UUID.randomUUID()).value();
+        String token = tokenService.issue(UUID.randomUUID(), UUID.randomUUID()).value();
         me("Bearer " + token).andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.type").value("urn:protik:problem:not-found"));
     }

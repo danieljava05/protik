@@ -26,7 +26,13 @@ export type ApiResult<T> =
     };
 
 export type Registered = { id: string; username: string };
-export type Token = { accessToken: string; tokenType: string; expiresIn: number };
+export type Token = {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+  refreshToken: string;
+  refreshExpiresIn: number;
+};
 export type Me = { id: string; username: string; displayName: string };
 
 async function request<T>(path: string, init: RequestInit): Promise<ApiResult<T>> {
@@ -83,6 +89,29 @@ export function login(body: { identifier: string; password: string }) {
     method: "POST",
     headers: json,
     body: JSON.stringify(body),
+  });
+}
+
+export function refresh(refreshToken: string) {
+  return request<Token>("/v1/auth/refresh", {
+    method: "POST",
+    headers: json,
+    body: JSON.stringify({ refreshToken }),
+  });
+}
+
+export function logout(refreshToken: string) {
+  return request<null>("/v1/auth/logout", {
+    method: "POST",
+    headers: json,
+    body: JSON.stringify({ refreshToken }),
+  });
+}
+
+export function logoutAll(accessToken: string) {
+  return request<null>("/v1/auth/logout-all", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
 }
 

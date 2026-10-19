@@ -26,7 +26,7 @@ public class TokenService {
         this.props = props;
     }
 
-    public AccessToken issue(UUID accountId) {
+    public AccessToken issue(UUID accountId, UUID sessionId) {
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer(props.issuer())
@@ -34,6 +34,7 @@ public class TokenService {
                 .issuedAt(now)
                 .expiresAt(now.plus(props.accessTokenTtl()))
                 .id(Ids.newId().toString())
+                .claim("sid", sessionId.toString())
                 .build();
         String token = encoder.encode(JwtEncoderParameters.from(
                 JwsHeader.with(MacAlgorithm.HS256).build(), claims)).getTokenValue();

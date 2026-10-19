@@ -37,7 +37,29 @@ final class AuthDtos {
         }
     }
 
-    record TokenResponse(String accessToken, String tokenType, long expiresIn) {
+    record TokenResponse(String accessToken, String tokenType, long expiresIn, String refreshToken,
+            long refreshExpiresIn) {
+
+        @Override
+        public String toString() {
+            return "TokenResponse[tokens=<redacted>]";
+        }
+    }
+
+    record RefreshRequest(@NotBlank @Size(max = 200) String refreshToken) {
+
+        @Override
+        public String toString() {
+            return "RefreshRequest[refreshToken=<redacted>]";
+        }
+    }
+
+    record LogoutRequest(@Size(max = 200) String refreshToken) {
+
+        @Override
+        public String toString() {
+            return "LogoutRequest[refreshToken=<redacted>]";
+        }
     }
 
     record MeResponse(UUID id, String username, String displayName) {

@@ -19,6 +19,7 @@ violations or cycles (proven by a deliberate violation). Decisions so far:
 | One Flyway run per module, own schema and history | [0007](docs/adr/0007-per-module-migrations.md) |
 | Persistence with `JdbcClient` and explicit SQL, not JPA | [0010](docs/adr/0010-persistence-with-jdbcclient.md) |
 | Argon2id passwords, HS256 15-minute JWT access tokens, stateless, deny by default | [0011](docs/adr/0011-authentication.md) |
+| Refresh tokens: random, hashed, rotated, reuse revokes the session, 10 s grace | [0012](docs/adr/0012-refresh-tokens-and-sessions.md) |
 | Idempotency-Key: claim + work + response in one transaction, HMAC fingerprint | [0009](docs/adr/0009-idempotency-keys.md) |
 | Job queue: at-least-once, leases, fencing by attempt, backoff | [0008](docs/adr/0008-job-queue-semantics.md) |
 | Schema per module, UUIDv7 IDs, no cross-module FKs, event-fed counters and read models | [0005](docs/adr/0005-database-structure.md) |
@@ -58,6 +59,17 @@ forged, expired, tampered, `alg: none` and foreign-issuer tokens, indistinguisha
 (including a dummy hash verification for unknown accounts), atomic registration under 10 concurrent
 requests, and that passwords never reach logs. Details in
 [ADR 0011](docs/adr/0011-authentication.md).
+
+## Sessions (T1.2)
+
+Login starts a session (a "family") and returns a refresh token: 256 random bits, stored only as a
+SHA-256, valid 30 days, session capped at 90. `POST /v1/auth/refresh` rotates it, so a session has
+exactly one live token. Presenting an already-rotated token revokes the whole session (token theft
+protection), except within a 10 s grace window where it is just refused (duplicate or racing
+requests). Concurrent refreshes are serialised by a row lock on the session, with the rotation update
+itself as a second guard. `logout` and `logout-all` end sessions; all failures return one identical
+401. Proven by 20 tests, including 8 simultaneous refreshes (one winner, session intact) and
+mutation checks. Details in [ADR 0012](docs/adr/0012-refresh-tokens-and-sessions.md).
 
 ## Idempotency
 
@@ -100,6 +112,10 @@ features and no authentication; every endpoint is open. Known gaps:
   concurrency limits, deduplication, or queue-depth metrics. A handler
   that loses its lease keeps running to the end (only its result is
   discarded). Workers poll once per second when idle.
+- Sessions: a client whose refresh response was lost holds a rotated token and must log in again
+  (grace period rejects instead of re-issuing). Access tokens stay valid up to 15 minutes after
+  logout or revocation. No device list, no device binding. Account suspension takes effect at the
+  next refresh.
 - Authentication: **no rate limiting or lockout yet (T1.5), so login can be brute-forced and, because
   Argon2 is memory-heavy, used to exhaust the server; do not deploy publicly before T1.5.** No email
   verification, password reset, breached-password check, MFA, or token revocation before expiry

@@ -12,6 +12,7 @@ public enum ProblemType {
     VALIDATION_FAILED("validation-failed", HttpStatus.BAD_REQUEST, "Validation failed"),
     UNAUTHENTICATED("unauthenticated", HttpStatus.UNAUTHORIZED, "Authentication required"),
     INVALID_CREDENTIALS("invalid-credentials", HttpStatus.UNAUTHORIZED, "Invalid credentials"),
+    INVALID_REFRESH_TOKEN("invalid-refresh-token", HttpStatus.UNAUTHORIZED, "Invalid refresh token"),
     FORBIDDEN("forbidden", HttpStatus.FORBIDDEN, "Forbidden"),
     NOT_FOUND("not-found", HttpStatus.NOT_FOUND, "Resource not found"),
     CONFLICT("conflict", HttpStatus.CONFLICT, "Conflict"),
