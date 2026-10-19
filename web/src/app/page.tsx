@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import * as api from "@/lib/api";
+import RankingSettings from "./RankingSettings";
 
 type Exchange = {
   label: string;
@@ -212,6 +213,8 @@ export default function Home() {
           )}
         </form>
       </div>
+
+      {accessToken && <RankingSettings accessToken={accessToken} onResult={record} />}
 
       <section>
         <h2>Requests</h2>

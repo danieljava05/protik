@@ -188,3 +188,25 @@ pre {
   gap: 8px;
   flex-wrap: wrap;
 }
+
+select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.slider input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.slider .row {
+  align-items: center;
+  flex-wrap: nowrap;
+}

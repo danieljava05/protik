@@ -34,6 +34,15 @@ export type Token = {
   refreshExpiresIn: number;
 };
 export type Me = { id: string; username: string; displayName: string };
+export type Mode = { code: string; description: string; followedOnly: boolean; weights: Record<string, number> };
+export type ComponentPreference = {
+  code: string;
+  description: string;
+  modeWeight: number;
+  override: number | null;
+  effectiveWeight: number;
+};
+export type Preferences = { mode: string; followedOnly: boolean; components: ComponentPreference[] };
 
 async function request<T>(path: string, init: RequestInit): Promise<ApiResult<T>> {
   let response: Response;
@@ -112,6 +121,24 @@ export function logoutAll(accessToken: string) {
   return request<null>("/v1/auth/logout-all", {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+const bearer = (accessToken: string) => ({ Authorization: `Bearer ${accessToken}` });
+
+export function modes(accessToken: string) {
+  return request<Mode[]>("/v1/feed/modes", { headers: bearer(accessToken) });
+}
+
+export function preferences(accessToken: string) {
+  return request<Preferences>("/v1/feed/preferences", { headers: bearer(accessToken) });
+}
+
+export function savePreferences(accessToken: string, body: { mode: string; weights: Record<string, number> }) {
+  return request<Preferences>("/v1/feed/preferences", {
+    method: "PUT",
+    headers: { ...json, ...bearer(accessToken) },
+    body: JSON.stringify(body),
   });
 }
 
