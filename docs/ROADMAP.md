@@ -41,8 +41,8 @@ done yet.
       scratch (the original bytes are never republished)
 
 ## Milestone 2: Transparent feed
-- [ ] T2.1 `Ranker` interface and structured score components
-- [ ] T2.2 Ranking modes and user-adjustable weights
+- [x] T2.1 `Ranker` interface and structured score components ([ADR 0014](adr/0014-transparent-ranker.md))
+- [x] T2.2 Ranking modes and user-adjustable weights (`/v1/feed/modes`, `/v1/feed/preferences`)
 - [ ] T2.3 Cursor-paginated feed; p99 latency measured
 
 ## Milestone 3: Data saver

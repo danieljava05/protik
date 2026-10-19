@@ -19,6 +19,7 @@ violations or cycles (proven by a deliberate violation). Decisions so far:
 | One Flyway run per module, own schema and history | [0007](docs/adr/0007-per-module-migrations.md) |
 | Persistence with `JdbcClient` and explicit SQL, not JPA | [0010](docs/adr/0010-persistence-with-jdbcclient.md) |
 | Argon2id passwords, HS256 15-minute JWT access tokens, stateless, deny by default | [0011](docs/adr/0011-authentication.md) |
+| `Ranker`: weighted sum of [0,1] components; the explanation is the score's own terms | [0014](docs/adr/0014-transparent-ranker.md) |
 | Rate limiting in PostgreSQL: reserve-then-refund, three login keys, hashed keys | [0013](docs/adr/0013-rate-limiting.md) |
 | Refresh tokens: random, hashed, rotated, reuse revokes the session, 10 s grace | [0012](docs/adr/0012-refresh-tokens-and-sessions.md) |
 | Idempotency-Key: claim + work + response in one transaction, HMAC fingerprint | [0009](docs/adr/0009-idempotency-keys.md) |
@@ -71,6 +72,22 @@ requests). Concurrent refreshes are serialised by a row lock on the session, wit
 itself as a second guard. `logout` and `logout-all` end sessions; all failures return one identical
 401. Proven by 20 tests, including 8 simultaneous refreshes (one winner, session intact) and
 mutation checks. Details in [ADR 0012](docs/adr/0012-refresh-tokens-and-sessions.md).
+
+## Transparent ranking (T2.1, T2.2)
+
+`Ranker` orders candidates; `WeightedRanker` sums `weight x value` over pluggable `ScoreFunction`s
+(RECENCY, ENGAGEMENT, FOLLOWING, TOPIC) and returns, per item, the exact list of terms it summed, so the
+explanation cannot disagree with the score (checked on 2,000 random inputs). Ties break by newest, then
+by unsigned UUID order, which is also PostgreSQL's order. Modes are data (published weights, plus a
+`followed_only` filter); a viewer picks a mode and overrides weights through `GET /v1/feed/modes`,
+`GET/PUT /v1/feed/preferences` (saves are atomic and idempotent; weights are validated to 0..1 with at
+most 3 decimals rather than rounded silently). A test fails if a component exists in the database
+without a function behind it, or the reverse.
+
+**Measured** (unit test, single thread, warmed up, AMD A8-7410, 4 cores, 14.9 GB RAM, Java 25):
+ranking 500 candidates takes about 6 ms, 10,000 about 100 ms, 100,000 about 750 ms. Replacing string
+UUID comparison with unsigned long comparison cut the 500-candidate case from 53 ms to 6 ms. These are
+timings of the ranking step alone, not of a feed request.
 
 ## Rate limiting (T1.5)
 
@@ -131,6 +148,10 @@ features and no authentication; every endpoint is open. Known gaps:
   revocation before expiry. HS256 with a shared secret; a lost secret lets anyone mint tokens.
   Registration reveals whether a username or email exists. **Do not deploy publicly before the
   account hardening in roadmap T1.6.**
+- Ranking: there is **no feed endpoint yet** (T2.3): the candidate pool, the follow graph and interest
+  tags that feed the ranker do not exist, so rankings have only been exercised with synthetic data. The
+  component formulas and constants are starting points, not tuned or evaluated: no claim of feed quality
+  is made. No diversity, negative signals or cold-start handling.
 - Rate limiting: fixed windows (up to twice the limit across a boundary); an attacker using many
   addresses can lock one account for a window; behind a proxy the deployment must configure trusted
   forwarded headers or every user shares the proxy's address; refresh and other endpoints are not

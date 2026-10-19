@@ -64,6 +64,7 @@ Key decisions, each with rejected alternatives:
 - [ADR 0011](docs/adr/0011-authentication.md): Argon2id passwords and short-lived JWTs
 - [ADR 0012](docs/adr/0012-refresh-tokens-and-sessions.md): rotating refresh tokens, reuse detection, logout
 - [ADR 0013](docs/adr/0013-rate-limiting.md): rate limiting for login and registration
+- [ADR 0014](docs/adr/0014-transparent-ranker.md): a pluggable ranker whose score is its own explanation
 
 ## Engineering standards
 
@@ -114,7 +115,8 @@ disposable PostgreSQL 17 database with `PROTIK_TEST_DB_URL` (and `PROTIK_TEST_DB
 log in, call `/v1/me`, and see every request's status, correlation ID and error document.
 
 **What works today:** registration and login (Argon2id, 15-minute JWTs), rotating refresh tokens with
-theft detection, logout, login and registration rate limiting, idempotent retries,
+theft detection, logout, login and registration rate limiting, a transparent ranking engine with user-chosen modes and
+weights, idempotent retries,
 RFC 9457 errors, request correlation IDs, OpenAPI, the shared job queue. There is no video
 feature yet; see the [roadmap](docs/ROADMAP.md).
 
