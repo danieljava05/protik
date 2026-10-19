@@ -1,10 +1,12 @@
 package com.protik.identity.web;
 
+import com.protik.identity.service.AccessThrottle;
 import com.protik.identity.service.AccountService;
 import com.protik.identity.service.SessionService;
 import com.protik.identity.service.TokenService;
 import com.protik.shared.idempotency.IdempotencyService;
 import com.protik.shared.idempotency.IdempotentAction;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import com.protik.shared.security.AuthenticatedUser;
 import org.springframework.http.CacheControl;
@@ -24,13 +26,15 @@ class AuthController {
     private final AccountService accounts;
     private final TokenService tokens;
     private final SessionService sessions;
+    private final AccessThrottle throttle;
     private final IdempotencyService idempotency;
 
-    AuthController(AccountService accounts, TokenService tokens, SessionService sessions,
+    AuthController(AccountService accounts, TokenService tokens, SessionService sessions, AccessThrottle throttle,
             IdempotencyService idempotency) {
         this.accounts = accounts;
         this.tokens = tokens;
         this.sessions = sessions;
+        this.throttle = throttle;
         this.idempotency = idempotency;
     }
 
@@ -41,7 +45,10 @@ class AuthController {
     @PostMapping("/register")
     ResponseEntity<AuthDtos.RegisterResponse> register(
             @RequestHeader(value = IdempotencyService.HEADER, required = false) String idempotencyKey,
-            @Valid @RequestBody AuthDtos.RegisterRequest request) {
+            @Valid @RequestBody AuthDtos.RegisterRequest request, HttpServletRequest http) {
+        // Before the idempotency transaction, so a blocked request holds no database connection.
+        // getRemoteAddr() is the TCP peer: X-Forwarded-For is client-controlled and deliberately ignored.
+        throttle.beginRegistration(http.getRemoteAddr());
         return idempotency.execute(IdempotencyService.ANONYMOUS_SCOPE, idempotencyKey, "POST /v1/auth/register",
                         request, AuthDtos.RegisterResponse.class, () -> {
                             var created = accounts.register(request.username(), request.email(), request.password());
@@ -56,8 +63,9 @@ class AuthController {
      * idempotency-keyed (ADR 0009): the response holds credentials, which must not be stored for replay.
      */
     @PostMapping("/login")
-    ResponseEntity<AuthDtos.TokenResponse> login(@Valid @RequestBody AuthDtos.LoginRequest request) {
-        var accountId = accounts.authenticate(request.identifier(), request.password());
+    ResponseEntity<AuthDtos.TokenResponse> login(@Valid @RequestBody AuthDtos.LoginRequest request,
+            HttpServletRequest http) {
+        var accountId = accounts.authenticate(request.identifier(), request.password(), http.getRemoteAddr());
         return tokenResponse(sessions.start(accountId));
     }
 

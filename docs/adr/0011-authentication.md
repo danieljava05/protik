@@ -26,8 +26,8 @@ so they can be raised later and old hashes still verify.
 hardness). *Rejected: PBKDF2* (weaker against GPUs).
 
 Cost: each hash uses about 19 MiB and some tens of milliseconds. Unbounded
-login attempts are therefore a denial-of-service vector; **rate limiting is
-required before public launch** (roadmap T1.5). Until then this is a known gap.
+login attempts are therefore a denial-of-service vector; rate limiting is
+described in [ADR 0013](0013-rate-limiting.md).
 
 ### 2. Password policy
 
@@ -82,6 +82,6 @@ other error, and 401 carries `WWW-Authenticate: Bearer`.
 - CORS is limited to configured origins (default: the local frontend).
 
 ## What this does not handle
-- Rate limiting and lockout (T1.5), breached-password check, email verification,
+- Breached-password check, email verification,
   password reset, multi-factor authentication, token revocation before expiry
   (until T1.2), asymmetric keys.

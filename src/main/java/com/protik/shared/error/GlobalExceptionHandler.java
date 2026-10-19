@@ -27,6 +27,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(RateLimitedException.class)
+    ResponseEntity<Object> handleRateLimited(RateLimitedException ex, WebRequest request) {
+        ProblemType type = ex.problemType();
+        long seconds = Math.max(1, ex.retryAfter().toSeconds());
+        ProblemDetail body = ProblemDetail.forStatusAndDetail(type.status(), ex.getMessage());
+        body.setType(type.type());
+        body.setTitle(type.title());
+        body.setProperty("retryAfterSeconds", seconds);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(seconds));
+        return handleExceptionInternal(ex, body, headers, type.status(), request);
+    }
+
     @ExceptionHandler(ApiException.class)
     ResponseEntity<Object> handleApiException(ApiException ex, WebRequest request) {
         ProblemType type = ex.problemType();

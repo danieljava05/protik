@@ -25,9 +25,9 @@ done yet.
       ([ADR 0010](adr/0010-persistence-with-jdbcclient.md), [ADR 0011](adr/0011-authentication.md))
 - [x] T1.2 Rotating refresh tokens with family revocation on reuse
       ([ADR 0012](adr/0012-refresh-tokens-and-sessions.md))
-- [ ] T1.5 Login hardening before any public deployment: per-account and per-IP rate limiting
-      and lockout (Argon2 is memory-heavy, so unbounded attempts are a DoS vector), breached-password
-      check, email verification, password reset
+- [x] T1.5 Rate limiting for login and registration ([ADR 0013](adr/0013-rate-limiting.md))
+- [ ] T1.6 Account hardening before any public deployment: breached-password check, email
+      verification, password reset (needs an email provider and a cost model)
 - [ ] T1.3 Presigned upload to MinIO, validation, `Idempotency-Key`.
       Upload safety (an uploaded file is hostile until proven otherwise):
       size and type limits at presign time; a quarantine bucket that

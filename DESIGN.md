@@ -19,6 +19,7 @@ violations or cycles (proven by a deliberate violation). Decisions so far:
 | One Flyway run per module, own schema and history | [0007](docs/adr/0007-per-module-migrations.md) |
 | Persistence with `JdbcClient` and explicit SQL, not JPA | [0010](docs/adr/0010-persistence-with-jdbcclient.md) |
 | Argon2id passwords, HS256 15-minute JWT access tokens, stateless, deny by default | [0011](docs/adr/0011-authentication.md) |
+| Rate limiting in PostgreSQL: reserve-then-refund, three login keys, hashed keys | [0013](docs/adr/0013-rate-limiting.md) |
 | Refresh tokens: random, hashed, rotated, reuse revokes the session, 10 s grace | [0012](docs/adr/0012-refresh-tokens-and-sessions.md) |
 | Idempotency-Key: claim + work + response in one transaction, HMAC fingerprint | [0009](docs/adr/0009-idempotency-keys.md) |
 | Job queue: at-least-once, leases, fencing by attempt, backoff | [0008](docs/adr/0008-job-queue-semantics.md) |
@@ -71,6 +72,16 @@ itself as a second guard. `logout` and `logout-all` end sessions; all failures r
 401. Proven by 20 tests, including 8 simultaneous refreshes (one winner, session intact) and
 mutation checks. Details in [ADR 0012](docs/adr/0012-refresh-tokens-and-sessions.md).
 
+## Rate limiting (T1.5)
+
+Login failures are counted per account+address (5 / 15 min), per account (20) and per address (100,
+generous because mobile carriers share addresses); registrations per address (20 / hour). Attempts
+are counted atomically *before* the password is checked and handed back on success, so a blocked
+request never costs an Argon2 verification: with 30 simultaneous guesses exactly 5 reach the hash.
+Unknown accounts are throttled identically, a correct password does not bypass a block, keys are
+SHA-256 hashes (no emails or IPs stored), and `X-Forwarded-For` is ignored. Blocked requests get 429
+with `Retry-After`. Details in [ADR 0013](docs/adr/0013-rate-limiting.md).
+
 ## Idempotency
 
 `IdempotencyService.execute` claims the `Idempotency-Key`, runs the action and stores
@@ -116,11 +127,14 @@ features and no authentication; every endpoint is open. Known gaps:
   (grace period rejects instead of re-issuing). Access tokens stay valid up to 15 minutes after
   logout or revocation. No device list, no device binding. Account suspension takes effect at the
   next refresh.
-- Authentication: **no rate limiting or lockout yet (T1.5), so login can be brute-forced and, because
-  Argon2 is memory-heavy, used to exhaust the server; do not deploy publicly before T1.5.** No email
-  verification, password reset, breached-password check, MFA, or token revocation before expiry
-  (refresh tokens arrive in T1.2). HS256 with a shared secret; a lost secret lets anyone mint tokens.
-  Registration reveals whether a username or email exists.
+- Authentication: no email verification, password reset, breached-password check, MFA, or token
+  revocation before expiry. HS256 with a shared secret; a lost secret lets anyone mint tokens.
+  Registration reveals whether a username or email exists. **Do not deploy publicly before the
+  account hardening in roadmap T1.6.**
+- Rate limiting: fixed windows (up to twice the limit across a boundary); an attacker using many
+  addresses can lock one account for a window; behind a proxy the deployment must configure trusted
+  forwarded headers or every user shares the proxy's address; refresh and other endpoints are not
+  limited; no CAPTCHA, no alerting.
 - Idempotency: anonymous endpoints share one key scope (clients must use random keys); a long
   action holds a lock on its key; stored response bodies must never contain secrets; each new POST
   must call the service explicitly (not automatic).
