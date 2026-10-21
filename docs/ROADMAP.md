@@ -2,8 +2,9 @@
 
 One ticket at a time, each finished to the Definition of Done in
 [CONTRIBUTING.md](../CONTRIBUTING.md). Order is deliberate: the
-foundations that other work depends on come first. Nothing below is
-done yet.
+foundations that other work depends on come first. Ticked items are
+done and tested; what each one still does not handle is listed in
+[DESIGN.md](../DESIGN.md).
 
 ## Milestone 0: Foundations
 - [x] T0.1 Maven build, Spring Boot skeleton, CI, Modulith boundary
@@ -43,7 +44,7 @@ done yet.
 ## Milestone 2: Transparent feed
 - [x] T2.1 `Ranker` interface and structured score components ([ADR 0014](adr/0014-transparent-ranker.md))
 - [x] T2.2 Ranking modes and user-adjustable weights (`/v1/feed/modes`, `/v1/feed/preferences`)
-- [ ] T2.3 Cursor-paginated feed; p99 latency measured
+- [x] T2.3 Cursor-paginated feed; p99 latency measured ([ADR 0015](adr/0015-feed-pipeline.md))
 
 ## Milestone 3: Data saver
 - [ ] T3.1 Per-user monthly data budget and prefetch cap

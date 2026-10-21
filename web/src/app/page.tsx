@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import * as api from "@/lib/api";
+import Feed from "./Feed";
 import RankingSettings from "./RankingSettings";
 
 type Exchange = {
@@ -21,6 +22,8 @@ export default function Home() {
   const [profile, setProfile] = useState<api.Me | null>(null);
   const [log, setLog] = useState<Exchange[]>([]);
   const [busy, setBusy] = useState(false);
+  // Bumped whenever ranking settings are saved, so the feed starts a fresh session under the new rules.
+  const [feedVersion, setFeedVersion] = useState(0);
 
   const [reg, setReg] = useState({ username: "", email: "", password: "" });
   // One key per intended registration, created on first submit (never during render, which would
@@ -214,7 +217,10 @@ export default function Home() {
         </form>
       </div>
 
-      {accessToken && <RankingSettings accessToken={accessToken} onResult={record} />}
+      {accessToken && (
+        <RankingSettings accessToken={accessToken} onResult={record} onSaved={() => setFeedVersion((v) => v + 1)} />
+      )}
+      {accessToken && <Feed key={`${accessToken}-${feedVersion}`} accessToken={accessToken} onResult={record} />}
 
       <section>
         <h2>Requests</h2>

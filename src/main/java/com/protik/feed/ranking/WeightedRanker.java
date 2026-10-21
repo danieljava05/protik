@@ -21,19 +21,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class WeightedRanker implements Ranker {
 
-    /**
-     * Best first: score, then newest, then video ID. IDs compare as unsigned bytes, which is how
-     * PostgreSQL orders UUIDs, so a database cursor and this order always agree (java.util.UUID's own
-     * compareTo is signed and would not). Comparing the two longs also avoids allocating strings.
-     */
-    private static final Comparator<Scored> ORDER = Comparator
-            .<Scored>comparingDouble(s -> s.item.score()).reversed()
-            .thenComparing((Scored s) -> s.candidate.publishedAt(), Comparator.reverseOrder())
-            .thenComparing((a, b) -> compareUnsigned(b.candidate.videoId(), a.candidate.videoId()));
+    /** Best first, by the shared definition of feed order (see {@link RankOrder}). */
+    private static final Comparator<Scored> ORDER = (a, b) -> RankOrder.compare(
+            a.item.score(), a.candidate.publishedAt(), a.candidate.videoId(),
+            b.item.score(), b.candidate.publishedAt(), b.candidate.videoId());
 
     static int compareUnsigned(java.util.UUID a, java.util.UUID b) {
-        int high = Long.compareUnsigned(a.getMostSignificantBits(), b.getMostSignificantBits());
-        return high != 0 ? high : Long.compareUnsigned(a.getLeastSignificantBits(), b.getLeastSignificantBits());
+        return RankOrder.compareUnsigned(a, b);
     }
 
     private final List<ScoreFunction> functions;

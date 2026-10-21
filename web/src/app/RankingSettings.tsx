@@ -6,13 +6,14 @@ import * as api from "@/lib/api";
 type Props = {
   accessToken: string;
   onResult: (label: string, result: api.ApiResult<unknown>) => void;
+  onSaved: () => void;
 };
 
 /**
  * Ranking transparency and control (VISION.md goal 1): see exactly which weights each mode applies,
  * pick one, and adjust any weight. What is saved is what the feed's ranker will use.
  */
-export default function RankingSettings({ accessToken, onResult }: Props) {
+export default function RankingSettings({ accessToken, onResult, onSaved }: Props) {
   const [modes, setModes] = useState<api.Mode[]>([]);
   const [saved, setSaved] = useState<api.Preferences | null>(null);
   const [mode, setMode] = useState<string>("DEFAULT");
@@ -68,7 +69,10 @@ export default function RankingSettings({ accessToken, onResult }: Props) {
     try {
       const result = await api.savePreferences(accessToken, { mode, weights: changed });
       onResult("PUT /v1/feed/preferences", result);
-      if (result.ok) adopt(result.data);
+      if (result.ok) {
+        adopt(result.data);
+        onSaved();
+      }
     } finally {
       setBusy(false);
     }

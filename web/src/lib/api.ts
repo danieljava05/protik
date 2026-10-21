@@ -42,6 +42,17 @@ export type ComponentPreference = {
   override: number | null;
   effectiveWeight: number;
 };
+export type ExplanationLine = { component: string; value: number; weight: number; contribution: number };
+export type FeedItem = {
+  videoId: string;
+  creatorId: string;
+  publishedAt: string;
+  durationMs: number;
+  language: string | null;
+  score: number;
+  explanation?: ExplanationLine[];
+};
+export type FeedPage = { asOf: string; mode: string; items: FeedItem[]; nextCursor: string | null };
 export type Preferences = { mode: string; followedOnly: boolean; components: ComponentPreference[] };
 
 async function request<T>(path: string, init: RequestInit): Promise<ApiResult<T>> {
@@ -140,6 +151,12 @@ export function savePreferences(accessToken: string, body: { mode: string; weigh
     headers: { ...json, ...bearer(accessToken) },
     body: JSON.stringify(body),
   });
+}
+
+export function feed(accessToken: string, options: { cursor?: string | null; limit?: number; explain?: boolean }) {
+  const query = new URLSearchParams({ limit: String(options.limit ?? 10), explain: String(options.explain ?? true) });
+  if (options.cursor) query.set("cursor", options.cursor);
+  return request<FeedPage>(`/v1/feed?${query}`, { headers: bearer(accessToken) });
 }
 
 export function me(accessToken: string) {

@@ -19,6 +19,7 @@ violations or cycles (proven by a deliberate violation). Decisions so far:
 | One Flyway run per module, own schema and history | [0007](docs/adr/0007-per-module-migrations.md) |
 | Persistence with `JdbcClient` and explicit SQL, not JPA | [0010](docs/adr/0010-persistence-with-jdbcclient.md) |
 | Argon2id passwords, HS256 15-minute JWT access tokens, stateless, deny by default | [0011](docs/adr/0011-authentication.md) |
+| Feed: bounded pool ranked per request, cursor pinned to a moment and the settings, events via a persistent registry | [0015](docs/adr/0015-feed-pipeline.md) |
 | `Ranker`: weighted sum of [0,1] components; the explanation is the score's own terms | [0014](docs/adr/0014-transparent-ranker.md) |
 | Rate limiting in PostgreSQL: reserve-then-refund, three login keys, hashed keys | [0013](docs/adr/0013-rate-limiting.md) |
 | Refresh tokens: random, hashed, rotated, reuse revokes the session, 10 s grace | [0012](docs/adr/0012-refresh-tokens-and-sessions.md) |
@@ -89,6 +90,23 @@ ranking 500 candidates takes about 6 ms, 10,000 about 100 ms, 100,000 about 750 
 UUID comparison with unsigned long comparison cut the 500-candidate case from 53 ms to 6 ms. These are
 timings of the ranking step alone, not of a feed request.
 
+## The feed (T2.3)
+
+`GET /v1/feed?limit&cursor&explain` returns the viewer's feed: the newest 500 candidates of the last 14 days
+(taken from the feed's own read models, restricted to followed creators in that mode) are ranked in memory with
+the viewer's mode and weights, then sliced after their cursor. Each item carries its explanation unless
+`explain=false`, which roughly halves the response. The cursor pins the session's start time and a fingerprint of
+the settings, so pages neither shuffle when new videos arrive nor mix two rule sets (changing settings
+mid-session gives 409). Read models are kept current from the video module's events (`VideoPublished`,
+`VideoRemoved`) through Modulith's persistent registry (table in the `shared` schema, handled events deleted,
+unfinished ones re-delivered at startup); handlers are idempotent, a rolled-back publish is never delivered, and a
+poison event stays in the registry without blocking others. Details in [ADR 0015](docs/adr/0015-feed-pipeline.md).
+
+**Measured** (`FeedPerformanceTests`: 20,000 candidates over 2,000 creators, 150 followed creators, local
+PostgreSQL 17, in-process MockMvc, 200 requests after warm-up, first page of 20, AMD A8-7410 4 cores, 14.9 GB,
+Java 25): **p50 40 ms, p95 57 ms, p99 72 ms**. This excludes the network, TLS and a real HTTP server, so it is a
+lower bound on what a client would see, not a latency claim.
+
 ## Rate limiting (T1.5)
 
 Login failures are counted per account+address (5 / 15 min), per account (20) and per address (100,
@@ -148,10 +166,14 @@ features and no authentication; every endpoint is open. Known gaps:
   revocation before expiry. HS256 with a shared secret; a lost secret lets anyone mint tokens.
   Registration reveals whether a username or email exists. **Do not deploy publicly before the
   account hardening in roadmap T1.6.**
-- Ranking: there is **no feed endpoint yet** (T2.3): the candidate pool, the follow graph and interest
-  tags that feed the ranker do not exist, so rankings have only been exercised with synthetic data. The
-  component formulas and constants are starting points, not tuned or evaluated: no claim of feed quality
-  is made. No diversity, negative signals or cold-start handling.
+- Feed: **no real videos exist yet** (uploads are T1.3/T1.4), so it has only run on test data and the opt-in
+  demo set. Nothing populates the follow graph, interests or engagement counters until the social and
+  engagement modules exist, so FOLLOWING and TOPIC are 0 for everyone in practice. The ranker only sees the
+  newest 500 candidates; counters are live, so an item can be repeated or skipped at a page boundary if its
+  counters change between pages; already-seen videos are not hidden; blocked creators and language
+  preferences are ignored; there is no rebuild/backfill command for the read models.
+- Ranking quality: the formulas and constants are starting points, not tuned or evaluated: no claim of feed
+  quality is made. No diversity, negative signals or cold-start handling.
 - Rate limiting: fixed windows (up to twice the limit across a boundary); an attacker using many
   addresses can lock one account for a window; behind a proxy the deployment must configure trusted
   forwarded headers or every user shares the proxy's address; refresh and other endpoints are not

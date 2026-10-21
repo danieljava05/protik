@@ -65,6 +65,7 @@ Key decisions, each with rejected alternatives:
 - [ADR 0012](docs/adr/0012-refresh-tokens-and-sessions.md): rotating refresh tokens, reuse detection, logout
 - [ADR 0013](docs/adr/0013-rate-limiting.md): rate limiting for login and registration
 - [ADR 0014](docs/adr/0014-transparent-ranker.md): a pluggable ranker whose score is its own explanation
+- [ADR 0015](docs/adr/0015-feed-pipeline.md): the feed pipeline: pooled ranking, stable cursors, events
 
 ## Engineering standards
 
@@ -114,9 +115,13 @@ disposable PostgreSQL 17 database with `PROTIK_TEST_DB_URL` (and `PROTIK_TEST_DB
 (`cd web && npm install && npm run dev`, then open http://localhost:3000) to register,
 log in, call `/v1/me`, and see every request's status, correlation ID and error document.
 
+**Sample videos:** there is no upload yet, so to see the feed start the backend with
+`--protik.demo.seed=true`. This loads 48 sample entries into the feed's read model only (no real videos); it is
+off by default and must never be enabled in production.
+
 **What works today:** registration and login (Argon2id, 15-minute JWTs), rotating refresh tokens with
-theft detection, logout, login and registration rate limiting, a transparent ranking engine with user-chosen modes and
-weights, idempotent retries,
+theft detection, logout, login and registration rate limiting, a transparent feed (`GET /v1/feed`: ranked by your own modes
+and weights, each video explained, stable paging), idempotent retries,
 RFC 9457 errors, request correlation IDs, OpenAPI, the shared job queue. There is no video
 feature yet; see the [roadmap](docs/ROADMAP.md).
 
