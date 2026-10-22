@@ -1,6 +1,7 @@
 package com.protik.social;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -12,6 +13,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.protik.TestcontainersConfiguration;
 import com.protik.engagement.service.CounterService;
 import com.protik.identity.service.TokenService;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -398,18 +400,27 @@ class CommentIntegrationTests {
         UUID top1 = postedId(postComment(UUID.randomUUID(), video, "top1", null, null));
         postedId(postComment(UUID.randomUUID(), video, "reply", top1, null));
         UUID top2 = postedId(postComment(UUID.randomUUID(), video, "top2", null, null));
-        counters.refresh();
-        assertThat(commentCounter()).as("replies count too").isEqualTo(3);
+        // The announcement of a new comment reaches the engagement module asynchronously, so the counter
+        // is allowed to lag: wait for it to converge instead of assuming the mark already exists.
+        awaitCommentCounter(3);
 
         UUID author = db.sql("SELECT author_id FROM social.comments WHERE id = :id").param("id", top1)
                 .query(UUID.class).single();
         deleteComment(author, top1).andExpect(status().isNoContent()); // removes top1 and its reply
-        counters.refresh();
-        assertThat(commentCounter()).isEqualTo(1);
+        awaitCommentCounter(1);
 
         db.sql("UPDATE social.comments SET status = 'HIDDEN' WHERE id = :id").param("id", top2).update();
         counters.reconcileAll();
         assertThat(commentCounter()).as("reconciliation catches changes made outside the API").isZero();
+    }
+
+    /** Refreshes until the stored counter equals the expected value (it converges within moments, by design). */
+    private void awaitCommentCounter(long expected) {
+        await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(100)).until(() -> {
+            counters.refresh();
+            return commentCounter() == expected;
+        });
+        assertThat(commentCounter()).isEqualTo(expected);
     }
 
     private long commentCounter() {
