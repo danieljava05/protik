@@ -2,10 +2,14 @@ package com.protik.feed.web;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.protik.feed.ComponentScore;
+import com.protik.feed.service.DataPolicy;
+import com.protik.video.Rendition;
 import com.protik.feed.service.FeedService;
 import com.protik.shared.security.AuthenticatedUser;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -26,10 +30,10 @@ class FeedController {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Item(UUID videoId, UUID creatorId, Instant publishedAt, int durationMs, String language, double score,
             long likes, long comments, long views, boolean liked, boolean followingCreator,
-            List<ExplanationLine> explanation) {
+            Map<String, Long> estimatedBytes, List<ExplanationLine> explanation) {
     }
 
-    record FeedResponse(Instant asOf, String mode, List<Item> items, String nextCursor) {
+    record FeedResponse(Instant asOf, String mode, List<Item> items, String nextCursor, DataPolicy dataPolicy) {
     }
 
     private final FeedService feed;
@@ -44,12 +48,14 @@ class FeedController {
      * @param limit   items per page (default 20, maximum 50)
      * @param cursor  {@code nextCursor} of the previous page; omit to start a fresh feed
      * @param explain set false to leave out the explanation and save bytes on a metered connection
+     * @param estimates set false to leave out the per-rendition size estimates
      */
     @GetMapping
     ResponseEntity<FeedResponse> feed(@AuthenticationPrincipal Jwt token,
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "true") boolean explain) {
+            @RequestParam(defaultValue = "true") boolean explain,
+            @RequestParam(defaultValue = "true") boolean estimates) {
         var page = feed.page(AuthenticatedUser.id(token), limit, cursor);
         List<Item> items = page.items().stream().map(entry -> {
             var candidate = entry.video().candidate();
@@ -58,11 +64,19 @@ class FeedController {
             return new Item(entry.ranked().videoId(), candidate.creatorId(), candidate.publishedAt(),
                     entry.video().durationMs(), entry.video().language(), entry.ranked().score(),
                     candidate.likes(), candidate.comments(), candidate.views(), entry.liked(),
-                    entry.followingCreator(), lines);
+                    entry.followingCreator(),
+                    estimates ? estimatesFor(page.renditions(), entry.video().durationMs()) : null, lines);
         }).toList();
         // personalised and time-dependent: never cache, in the browser or in a shared proxy
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .body(new FeedResponse(page.asOf(), page.mode(), items, page.nextCursor()));
+                .body(new FeedResponse(page.asOf(), page.mode(), items, page.nextCursor(), page.dataPolicy()));
+    }
+
+    /** Upper bounds from the bitrate ladder (ADR 0018 decision 4), cheapest rendition first. */
+    private static Map<String, Long> estimatesFor(List<Rendition> renditions, int durationMs) {
+        Map<String, Long> bytes = new LinkedHashMap<>();
+        renditions.forEach(r -> bytes.put(r.code(), r.estimateBytes(durationMs)));
+        return bytes;
     }
 
     private static ExplanationLine line(ComponentScore c) {

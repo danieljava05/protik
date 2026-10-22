@@ -133,9 +133,12 @@ class FeedIntegrationTests {
         }
         String withExplanation = body(feed("?explain=true"));
         String without = body(feed("?explain=false"));
+        String bare = body(feed("?explain=false&estimates=false"));
         assertThat(without).as("the field is absent, not null").doesNotContain("explanation");
-        assertThat(without.length()).as("the leaner response is substantially smaller")
-                .isLessThan(withExplanation.length() / 2);
+        assertThat(without.length()).as("leaving out the explanation saves a good share")
+                .isLessThan((int) (withExplanation.length() * 0.75));
+        assertThat(bare.length()).as("leaving out the size estimates too leaves well under half")
+                .isLessThan((int) (withExplanation.length() * 0.45));
         assertThat(ids(without)).isEqualTo(ids(withExplanation));
     }
 

@@ -55,9 +55,32 @@ export type FeedItem = {
   views: number;
   liked: boolean;
   followingCreator: boolean;
+  estimatedBytes?: Record<string, number>;
   explanation?: ExplanationLine[];
 };
-export type FeedPage = { asOf: string; mode: string; items: FeedItem[]; nextCursor: string | null };
+export type DataPolicy = {
+  state: "UNLIMITED" | "OK" | "LOW" | "EXHAUSTED";
+  remainingBytes: number | null;
+  recommendedRendition: string | null;
+  prefetchBudgetBytes: number;
+  dataSaver: boolean;
+};
+export type DataSettings = { dataSaver: boolean; monthlyCapMb: number | null; prefetchCapMb: number; billingDay: number };
+export type UsageSummary = {
+  periodStart: string;
+  periodEnd: string;
+  usedBytes: number;
+  capBytes: number | null;
+  byRendition: Record<string, number>;
+  policy: DataPolicy;
+};
+export type FeedPage = {
+  asOf: string;
+  mode: string;
+  items: FeedItem[];
+  nextCursor: string | null;
+  dataPolicy: DataPolicy;
+};
 export type CommentItem = { id: string; authorId: string; body: string; createdAt: string; replyCount: number };
 export type CommentPage = { items: CommentItem[]; nextCursor: string | null };
 export type PostedComment = {
@@ -213,6 +236,35 @@ export function postComment(
 
 export function deleteComment(accessToken: string, commentId: string) {
   return request<null>(`/v1/comments/${commentId}`, { method: "DELETE", headers: bearer(accessToken) });
+}
+
+export function dataSettings(accessToken: string) {
+  return request<DataSettings>("/v1/data/settings", { headers: bearer(accessToken) });
+}
+
+export function saveDataSettings(accessToken: string, body: DataSettings) {
+  return request<DataSettings>("/v1/data/settings", {
+    method: "PUT",
+    headers: { ...json, ...bearer(accessToken) },
+    body: JSON.stringify(body),
+  });
+}
+
+export function usageSummary(accessToken: string) {
+  return request<UsageSummary>("/v1/data/usage", { headers: bearer(accessToken) });
+}
+
+/** Event IDs are chosen here, so resending a batch after a dropped connection counts nothing twice. */
+export function reportUsage(
+  accessToken: string,
+  events: { videoId: string; rendition: string; bytes: number }[],
+) {
+  const at = new Date().toISOString();
+  return request<{ accepted: number; ignoredDuplicates: number }>("/v1/data/usage", {
+    method: "POST",
+    headers: { ...json, ...bearer(accessToken) },
+    body: JSON.stringify({ events: events.map((e) => ({ id: crypto.randomUUID(), occurredAt: at, ...e })) }),
+  });
 }
 
 export function me(accessToken: string) {

@@ -321,3 +321,47 @@ button.toggle.on {
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+.meter {
+  margin-top: 12px;
+}
+
+.meter .bar {
+  height: 12px;
+}
+
+.meter .bar span {
+  display: block;
+  height: 100%;
+}
+
+.state {
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+
+.state.low,
+.advice.low {
+  color: #b86e00;
+  border-color: #b86e00;
+}
+
+.state.exhausted,
+.advice.exhausted {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+
+.advice {
+  margin: 8px 0;
+  font-size: 0.9rem;
+}
+
+.cost select {
+  width: auto;
+  margin-top: 0;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+}

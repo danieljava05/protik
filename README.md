@@ -68,6 +68,7 @@ Key decisions, each with rejected alternatives:
 - [ADR 0015](docs/adr/0015-feed-pipeline.md): the feed pipeline: pooled ranking, stable cursors, events
 - [ADR 0016](docs/adr/0016-social-and-engagement.md): follows, likes and counters across modules
 - [ADR 0017](docs/adr/0017-comments.md): comments: plain text, one level of replies, stable paging
+- [ADR 0018](docs/adr/0018-data-budget.md): data budget, data saver and prefetch cap
 
 ## Engineering standards
 
@@ -126,7 +127,8 @@ default and must never be enabled in production.
 theft detection, logout, login and registration rate limiting, a transparent feed (`GET /v1/feed`: ranked by your own modes
 and weights, each video explained, stable paging), idempotent retries,
 RFC 9457 errors, request correlation IDs, OpenAPI, the shared job queue, follows, likes and comments with counters that
-stay accurate under load. There is no video upload yet; see the [roadmap](docs/ROADMAP.md).
+stay accurate under load, and a per-user data budget with data saver, prefetch cap and per-video cost
+estimates (the server advises, the app obeys). There is no video upload yet; see the [roadmap](docs/ROADMAP.md).
 
 ## License
 

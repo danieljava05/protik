@@ -47,7 +47,7 @@ done and tested; what each one still does not handle is listed in
 - [x] T2.3 Cursor-paginated feed; p99 latency measured ([ADR 0015](adr/0015-feed-pipeline.md))
 
 ## Milestone 3: Data saver
-- [ ] T3.1 Per-user monthly data budget and prefetch cap
+- [x] T3.1 Per-user monthly data budget and prefetch cap ([ADR 0018](adr/0018-data-budget.md))
 - [ ] T3.2 Reproducible MB-per-10-minutes benchmark, on and off
 
 ## Milestone 4: African-language captions

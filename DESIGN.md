@@ -21,6 +21,7 @@ violations or cycles (proven by a deliberate violation). Decisions so far:
 | Argon2id passwords, HS256 15-minute JWT access tokens, stateless, deny by default | [0011](docs/adr/0011-authentication.md) |
 | Feed: bounded pool ranked per request, cursor pinned to a moment and the settings, events via a persistent registry | [0015](docs/adr/0015-feed-pipeline.md) |
 | Follows/likes: existence via small public APIs, facts as events, counters recounted from a dirty set | [0016](docs/adr/0016-social-and-engagement.md) |
+| Data budget: server advises, client reports, billing-day periods, estimates from the bitrate ladder | [0018](docs/adr/0018-data-budget.md) |
 | Comments: plain text, one reply level, keyset paging, idempotent post, real delete, per-user rate limit | [0017](docs/adr/0017-comments.md) |
 | `Ranker`: weighted sum of [0,1] components; the explanation is the score's own terms | [0014](docs/adr/0014-transparent-ranker.md) |
 | Rate limiting in PostgreSQL: reserve-then-refund, three login keys, hashed keys | [0013](docs/adr/0013-rate-limiting.md) |
@@ -106,7 +107,7 @@ poison event stays in the registry without blocking others. Details in [ADR 0015
 
 **Measured** (`FeedPerformanceTests`: 20,000 candidates over 2,000 creators, 150 followed creators, local
 PostgreSQL 17, in-process MockMvc, 200 requests after warm-up, first page of 20, AMD A8-7410 4 cores, 14.9 GB,
-Java 25): **p50 39 to 40 ms, p95 57 to 68 ms, p99 72 to 110 ms** over two runs (the spread is run-to-run noise on a
+Java 25): **p50 37 to 40 ms, p95 48 to 68 ms, p99 65 to 110 ms** over three runs (the third includes the data-budget advice) (the spread is run-to-run noise on a
 slow laptop). This excludes the network, TLS and a real HTTP server, so it is a lower bound on what a client would see,
 not a latency claim.
 
@@ -137,6 +138,18 @@ stored exactly as given and never treated as markup, so clients must escape it. 
 `CommentCountChanged`; the engagement refresher recounts through social's `CommentCounts` and the total (replies included) reaches the
 feed. An hourly reconciliation also repairs comment counters. Rejected attempts count toward the posting limit. Details in
 [ADR 0017](docs/adr/0017-comments.md).
+
+## Data budget (T3.1)
+
+`GET/PUT /v1/data/settings` (data saver, monthly cap in MB or none, prefetch cap, billing day 1 to 28),
+`POST /v1/data/usage` (up to 100 events, each with a client-chosen ID so a resent batch counts nothing twice),
+`GET /v1/data/usage` (this billing period's usage by rendition and the advice). The budget period follows the
+day the user's plan renews, not the calendar month. One pure function turns settings and usage into advice:
+`UNLIMITED`, `OK`, `LOW` (90% used: use 144p), `EXHAUSTED` (use audio, no preload); data saver forces 144p and no
+preload. Every feed page carries that advice (`dataPolicy`) and each item the estimated bytes at every rendition
+(`estimatedBytes`, from duration and the bitrate ladder; `estimates=false` leaves them out). **The server never
+blocks playback**: it cannot see bytes object storage serves, so usage is reported by the app and the budget is
+advice. Usage older than 400 days is deleted. Details in [ADR 0018](docs/adr/0018-data-budget.md).
 
 ## Rate limiting (T1.5)
 
@@ -201,6 +214,10 @@ features and no authentication; every endpoint is open. Known gaps:
   no notifications, no editing of comments, no comment reactions or mentions, no spam or profanity detection, no moderator hide or
   remove yet (T5.2). Counters lag a like or comment by about a second. A like that reaches the feed before the feed has indexed the video does not influence interests.
   The demo counters are invented and the hourly reconciliation zeroes them.
+- Data budget: usage is reported by the app and unverified, so a dishonest app only misleads its own user; nothing is
+  enforced server-side; size estimates are upper bounds from the bitrate ladder, not measurements (until T1.4); no
+  Wi-Fi versus mobile distinction; `feed.usage_events` has only its default partition (no monthly partition
+  maintenance yet, the 400-day purge keeps it bounded). The advice adds two small queries per feed page.
 - Feed: **no real videos exist yet** (uploads are T1.3/T1.4), so it has only run on test data and the opt-in
   demo set. Nothing populates the follow graph, interests or engagement counters until the social and
   engagement modules exist, so FOLLOWING and TOPIC are 0 for everyone in practice. The ranker only sees the

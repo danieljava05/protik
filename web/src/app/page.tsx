@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import * as api from "@/lib/api";
+import DataBudget from "./DataBudget";
 import Feed from "./Feed";
 import RankingSettings from "./RankingSettings";
 
@@ -24,6 +25,8 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   // Bumped whenever ranking settings are saved, so the feed starts a fresh session under the new rules.
   const [feedVersion, setFeedVersion] = useState(0);
+  // Bumped when reported usage changes, so the data budget meter reloads.
+  const [dataVersion, setDataVersion] = useState(0);
 
   const [reg, setReg] = useState({ username: "", email: "", password: "" });
   // One key per intended registration, created on first submit (never during render, which would
@@ -218,6 +221,14 @@ export default function Home() {
       </div>
 
       {accessToken && (
+        <DataBudget
+          accessToken={accessToken}
+          version={dataVersion}
+          onResult={record}
+          onSaved={() => setFeedVersion((v) => v + 1)}
+        />
+      )}
+      {accessToken && (
         <RankingSettings accessToken={accessToken} onResult={record} onSaved={() => setFeedVersion((v) => v + 1)} />
       )}
       {accessToken && <Feed
@@ -225,6 +236,7 @@ export default function Home() {
           accessToken={accessToken}
           currentUserId={profile?.id ?? null}
           onResult={record}
+          onUsage={() => setDataVersion((v) => v + 1)}
         />}
 
       <section>

@@ -11,6 +11,9 @@ import com.protik.shared.error.ProblemType;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import com.protik.video.Rendition;
+import com.protik.video.RenditionCatalog;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HexFormat;
@@ -33,19 +36,42 @@ public class FeedService {
     public record Entry(RankedItem ranked, PoolEntry video, boolean liked, boolean followingCreator) {
     }
 
-    public record Page(Instant asOf, String mode, List<Entry> items, String nextCursor) {
+    public record Page(Instant asOf, String mode, List<Entry> items, String nextCursor, DataPolicy dataPolicy,
+            List<Rendition> renditions) {
     }
 
     private final FeedRepository repository;
     private final FeedPreferencesService preferences;
     private final Ranker ranker;
     private final FeedProperties props;
+    private final DataService data;
+    private final RenditionCatalog renditionCatalog;
+    private final Clock clock;
+    /** The ladder changes about never, so it is read at most once a minute instead of on every request. */
+    private volatile CachedRenditions renditionCache = new CachedRenditions(Instant.EPOCH, List.of());
 
-    FeedService(FeedRepository repository, FeedPreferencesService preferences, Ranker ranker, FeedProperties props) {
+    private record CachedRenditions(Instant loadedAt, List<Rendition> renditions) {
+    }
+
+    FeedService(FeedRepository repository, FeedPreferencesService preferences, Ranker ranker, FeedProperties props,
+            DataService data, RenditionCatalog renditionCatalog, Clock clock) {
         this.repository = repository;
         this.preferences = preferences;
         this.ranker = ranker;
         this.props = props;
+        this.data = data;
+        this.renditionCatalog = renditionCatalog;
+        this.clock = clock;
+    }
+
+    private List<Rendition> renditions() {
+        CachedRenditions cached = renditionCache;
+        Instant now = clock.instant();
+        if (cached.renditions().isEmpty() || cached.loadedAt().plusSeconds(60).isBefore(now)) {
+            cached = new CachedRenditions(now, List.copyOf(renditionCatalog.all()));
+            renditionCache = cached;
+        }
+        return cached.renditions();
     }
 
     /**
@@ -104,7 +130,7 @@ public class FeedService {
             next = new FeedCursor(asOf, settingsHash, last.ranked().score(), last.video().candidate().publishedAt(),
                     last.ranked().videoId()).encode();
         }
-        return new Page(asOf, prefs.mode(), List.copyOf(page), next);
+        return new Page(asOf, prefs.mode(), List.copyOf(page), next, data.policy(userId), renditions());
     }
 
     private static boolean sortsAfter(RankedItem item, PoolEntry video, FeedCursor cursor) {

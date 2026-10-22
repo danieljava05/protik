@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import * as api from "@/lib/api";
 import Comments from "./Comments";
+import { megabytes } from "./DataBudget";
 
 type Props = {
   accessToken: string;
   currentUserId: string | null;
+  /** Called after the app reports bytes, so the budget meter reloads. */
+  onUsage: () => void;
   onResult: (label: string, result: api.ApiResult<unknown>) => void;
 };
 
@@ -18,7 +21,7 @@ const COLOURS: Record<string, string> = {
   TOPIC: "var(--c-topic)",
 };
 
-export default function Feed({ accessToken, currentUserId, onResult }: Props) {
+export default function Feed({ accessToken, currentUserId, onUsage, onResult }: Props) {
   const [items, setItems] = useState<api.FeedItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [mode, setMode] = useState<string>("");
@@ -26,6 +29,8 @@ export default function Feed({ accessToken, currentUserId, onResult }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [explain, setExplain] = useState(true);
   const [openComments, setOpenComments] = useState<string | null>(null);
+  const [policy, setPolicy] = useState<api.DataPolicy | null>(null);
+  const [choice, setChoice] = useState<Record<string, string>>({});
 
   /** Stores a response (or its error). Called only after a response has arrived. */
   function apply(next: string | null, replace: boolean, result: api.ApiResult<api.FeedPage>) {
@@ -36,6 +41,7 @@ export default function Feed({ accessToken, currentUserId, onResult }: Props) {
       return;
     }
     setMode(result.data.mode);
+    setPolicy(result.data.dataPolicy);
     setCursor(result.data.nextCursor);
     setItems((previous) => (replace ? result.data.items : [...previous, ...result.data.items]));
   }
@@ -55,6 +61,26 @@ export default function Feed({ accessToken, currentUserId, onResult }: Props) {
     const result = await api.setFollow(accessToken, item.creatorId, target);
     onResult(`${target ? "PUT" : "DELETE"} /v1/users/…/follow`, result);
     if (!result.ok) patchCreator(item.creatorId, (i) => ({ ...i, followingCreator: item.followingCreator }));
+  }
+
+  /** "Watch" a video at a quality: report the estimated bytes, as a real player would report what it downloaded. */
+  async function watch(item: api.FeedItem, rendition: string) {
+    const bytes = item.estimatedBytes?.[rendition];
+    if (bytes === undefined) return;
+    const reported = await api.reportUsage(accessToken, [{ videoId: item.videoId, rendition, bytes }]);
+    onResult("POST /v1/data/usage", reported);
+    if (!reported.ok) return;
+    const summary = await api.usageSummary(accessToken);
+    onResult("GET /v1/data/usage", summary);
+    if (summary.ok) setPolicy(summary.data.policy);
+    onUsage();
+  }
+
+  function chosenRendition(item: api.FeedItem): string | undefined {
+    const options = Object.keys(item.estimatedBytes ?? {});
+    return choice[item.videoId] ?? (policy?.recommendedRendition && options.includes(policy.recommendedRendition)
+      ? policy.recommendedRendition
+      : options.includes("480p") ? "480p" : options[0]);
   }
 
   function patch(videoId: string, change: (item: api.FeedItem) => api.FeedItem) {
@@ -93,6 +119,14 @@ export default function Feed({ accessToken, currentUserId, onResult }: Props) {
         Sample videos only: there is no upload yet. Each bar shows how a video&apos;s score is built from the
         components and your weights; change the sliders above and the order changes.
       </p>
+      {policy && (
+        <p className={`advice ${policy.state.toLowerCase()}`}>
+          Data advice: <strong>{policy.state}</strong>
+          {policy.recommendedRendition ? ` · use ${policy.recommendedRendition} or lower` : " · any quality is fine"}
+          {" · "}preload up to {megabytes(policy.prefetchBudgetBytes)}
+          {policy.remainingBytes !== null && ` · ${megabytes(policy.remainingBytes)} left`}
+        </p>
+      )}
       <label className="check">
         <input
           type="checkbox"
@@ -143,6 +177,24 @@ export default function Feed({ accessToken, currentUserId, onResult }: Props) {
                 {item.followingCreator ? "Following" : "Follow creator"}
               </button>
             </div>
+            {item.estimatedBytes && chosenRendition(item) && (
+              <div className="row cost">
+                <select
+                  aria-label="Quality"
+                  value={chosenRendition(item)}
+                  onChange={(e) => setChoice({ ...choice, [item.videoId]: e.target.value })}
+                >
+                  {Object.entries(item.estimatedBytes).map(([code, bytes]) => (
+                    <option key={code} value={code}>
+                      {code} · about {megabytes(bytes)}
+                    </option>
+                  ))}
+                </select>
+                <button type="button" className="toggle" onClick={() => void watch(item, chosenRendition(item) as string)}>
+                  Watch (reports usage)
+                </button>
+              </div>
+            )}
             <button
               type="button"
               className="toggle"
