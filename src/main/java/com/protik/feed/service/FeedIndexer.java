@@ -39,9 +39,26 @@ public class FeedIndexer {
         repository.deleteCandidate(videoId);
     }
 
+    /** Counters as of now. */
     @Transactional
     public void statsChanged(UUID videoId, long likes, long comments, long views) {
-        repository.setStats(videoId, Math.max(0, likes), Math.max(0, comments), Math.max(0, views));
+        statsChanged(videoId, likes, comments, views, Instant.now());
+    }
+
+    /** Counters as of {@code computedAt}; ignored if the feed already has newer ones. */
+    @Transactional
+    public void statsChanged(UUID videoId, long likes, long comments, long views, Instant computedAt) {
+        repository.setStats(videoId, Math.max(0, likes), Math.max(0, comments), Math.max(0, views), computedAt);
+    }
+
+    @Transactional
+    public void liked(UUID userId, UUID videoId) {
+        repository.addLike(userId, videoId);
+    }
+
+    @Transactional
+    public void unliked(UUID userId, UUID videoId) {
+        repository.removeLike(userId, videoId);
     }
 
     @Transactional

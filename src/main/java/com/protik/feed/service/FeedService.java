@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -29,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FeedService {
 
     /** One feed item: the ranker's decision plus the facts the client needs to show the video. */
-    public record Entry(RankedItem ranked, PoolEntry video) {
+    public record Entry(RankedItem ranked, PoolEntry video, boolean liked, boolean followingCreator) {
     }
 
     public record Page(Instant asOf, String mode, List<Entry> items, String nextCursor) {
@@ -76,19 +77,26 @@ public class FeedService {
                 repository.followedCreators(userId), repository.interests(userId));
         List<RankedItem> ranked = ranker.rank(context, pool.stream().map(PoolEntry::candidate).toList());
 
-        List<Entry> page = new java.util.ArrayList<>(size);
+        List<RankedItem> chosen = new java.util.ArrayList<>(size);
         boolean more = false;
         for (RankedItem item : ranked) {
             PoolEntry video = byId.get(item.videoId());
             if (position != null && !sortsAfter(item, video, position)) {
                 continue;
             }
-            if (page.size() == size) {
+            if (chosen.size() == size) {
                 more = true;
                 break;
             }
-            page.add(new Entry(item, video));
+            chosen.add(item);
         }
+
+        Set<UUID> liked = repository.likedAmong(userId, chosen.stream().map(RankedItem::videoId).toList());
+        List<Entry> page = chosen.stream().map(item -> {
+            PoolEntry video = byId.get(item.videoId());
+            return new Entry(item, video, liked.contains(item.videoId()),
+                    context.followedCreators().contains(video.candidate().creatorId()));
+        }).toList();
 
         String next = null;
         if (more) {

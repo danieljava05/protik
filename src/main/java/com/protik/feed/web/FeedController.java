@@ -25,6 +25,7 @@ class FeedController {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Item(UUID videoId, UUID creatorId, Instant publishedAt, int durationMs, String language, double score,
+            long likes, long comments, long views, boolean liked, boolean followingCreator,
             List<ExplanationLine> explanation) {
     }
 
@@ -55,7 +56,9 @@ class FeedController {
             List<ExplanationLine> lines = explain
                     ? entry.ranked().components().stream().map(FeedController::line).toList() : null;
             return new Item(entry.ranked().videoId(), candidate.creatorId(), candidate.publishedAt(),
-                    entry.video().durationMs(), entry.video().language(), entry.ranked().score(), lines);
+                    entry.video().durationMs(), entry.video().language(), entry.ranked().score(),
+                    candidate.likes(), candidate.comments(), candidate.views(), entry.liked(),
+                    entry.followingCreator(), lines);
         }).toList();
         // personalised and time-dependent: never cache, in the browser or in a shared proxy
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())

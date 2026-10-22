@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import * as api from "@/lib/api";
+import Comments from "./Comments";
 
 type Props = {
   accessToken: string;
+  currentUserId: string | null;
   onResult: (label: string, result: api.ApiResult<unknown>) => void;
 };
 
@@ -16,13 +18,14 @@ const COLOURS: Record<string, string> = {
   TOPIC: "var(--c-topic)",
 };
 
-export default function Feed({ accessToken, onResult }: Props) {
+export default function Feed({ accessToken, currentUserId, onResult }: Props) {
   const [items, setItems] = useState<api.FeedItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [mode, setMode] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [explain, setExplain] = useState(true);
+  const [openComments, setOpenComments] = useState<string | null>(null);
 
   /** Stores a response (or its error). Called only after a response has arrived. */
   function apply(next: string | null, replace: boolean, result: api.ApiResult<api.FeedPage>) {
@@ -35,6 +38,31 @@ export default function Feed({ accessToken, onResult }: Props) {
     setMode(result.data.mode);
     setCursor(result.data.nextCursor);
     setItems((previous) => (replace ? result.data.items : [...previous, ...result.data.items]));
+  }
+
+  /** Optimistic: show the change at once, ask the server, and undo it if the server says no. */
+  async function toggleLike(item: api.FeedItem) {
+    const target = !item.liked;
+    patch(item.videoId, (i) => ({ ...i, liked: target, likes: Math.max(0, i.likes + (target ? 1 : -1)) }));
+    const result = await api.setLike(accessToken, item.videoId, target);
+    onResult(`${target ? "PUT" : "DELETE"} /v1/videos/…/like`, result);
+    if (!result.ok) patch(item.videoId, (i) => ({ ...i, liked: item.liked, likes: item.likes }));
+  }
+
+  async function toggleFollow(item: api.FeedItem) {
+    const target = !item.followingCreator;
+    patchCreator(item.creatorId, (i) => ({ ...i, followingCreator: target }));
+    const result = await api.setFollow(accessToken, item.creatorId, target);
+    onResult(`${target ? "PUT" : "DELETE"} /v1/users/…/follow`, result);
+    if (!result.ok) patchCreator(item.creatorId, (i) => ({ ...i, followingCreator: item.followingCreator }));
+  }
+
+  function patch(videoId: string, change: (item: api.FeedItem) => api.FeedItem) {
+    setItems((previous) => previous.map((i) => (i.videoId === videoId ? change(i) : i)));
+  }
+
+  function patchCreator(creatorId: string, change: (item: api.FeedItem) => api.FeedItem) {
+    setItems((previous) => previous.map((i) => (i.creatorId === creatorId ? change(i) : i)));
   }
 
   /** Used by buttons: show the loading state, then fetch. */
@@ -97,6 +125,40 @@ export default function Feed({ accessToken, onResult }: Props) {
               creator {item.creatorId.slice(-6)} · {item.language ?? "?"} · {Math.round(item.durationMs / 1000)} s ·{" "}
               {ago(item.publishedAt)}
             </div>
+            <div className="row actions">
+              <button
+                type="button"
+                className={item.liked ? "toggle on" : "toggle"}
+                aria-pressed={item.liked}
+                onClick={() => void toggleLike(item)}
+              >
+                {item.liked ? "♥ Liked" : "♡ Like"} · {item.likes}
+              </button>
+              <button
+                type="button"
+                className={item.followingCreator ? "toggle on" : "toggle"}
+                aria-pressed={item.followingCreator}
+                onClick={() => void toggleFollow(item)}
+              >
+                {item.followingCreator ? "Following" : "Follow creator"}
+              </button>
+            </div>
+            <button
+              type="button"
+              className="toggle"
+              aria-expanded={openComments === item.videoId}
+              onClick={() => setOpenComments(openComments === item.videoId ? null : item.videoId)}
+            >
+              {openComments === item.videoId ? "Hide comments" : `Comments · ${item.comments}`}
+            </button>
+            {openComments === item.videoId && (
+              <Comments
+                accessToken={accessToken}
+                videoId={item.videoId}
+                currentUserId={currentUserId}
+                onResult={onResult}
+              />
+            )}
             {item.explanation && <Breakdown lines={item.explanation} />}
           </li>
         ))}

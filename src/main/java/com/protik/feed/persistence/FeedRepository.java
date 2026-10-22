@@ -84,9 +84,23 @@ public class FeedRepository {
                 .query(UUID.class).set();
     }
 
+    /** Tags the viewer set explicitly plus the tags of every candidate they have liked (ADR 0016 decision 4). */
     public Set<String> interests(UUID userId) {
-        return db.sql("SELECT tag FROM feed.user_interests WHERE user_id = :u").param("u", userId)
-                .query(String.class).set();
+        return db.sql("""
+                SELECT tag FROM feed.user_interests WHERE user_id = :u
+                UNION
+                SELECT t.tag FROM feed.user_likes l JOIN feed.candidate_tags t ON t.video_id = l.video_id
+                WHERE l.user_id = :u
+                """).param("u", userId).query(String.class).set();
+    }
+
+    /** Which of these videos the viewer has liked. */
+    public Set<UUID> likedAmong(UUID userId, Collection<UUID> videoIds) {
+        if (videoIds.isEmpty()) {
+            return Set.of();
+        }
+        return db.sql("SELECT video_id FROM feed.user_likes WHERE user_id = :u AND video_id IN (:ids)")
+                .param("u", userId).param("ids", videoIds).query(UUID.class).set();
     }
 
     // ---- writing the read models (idempotent: events are delivered at least once) ----
@@ -100,7 +114,7 @@ public class FeedRepository {
                 """)
                 .param("id", videoId).param("creator", creatorId).param("language", language)
                 .param("published", utc(publishedAt)).param("duration", durationMs).update();
-        db.sql("INSERT INTO feed.candidate_stats (video_id) VALUES (:id) ON CONFLICT (video_id) DO NOTHING")
+        db.sql("INSERT INTO feed.candidate_stats (video_id, as_of) VALUES (:id, 'epoch') ON CONFLICT (video_id) DO NOTHING")
                 .param("id", videoId).update();
     }
 
@@ -116,12 +130,28 @@ public class FeedRepository {
         return db.sql("DELETE FROM feed.candidates WHERE video_id = :id").param("id", videoId).update();
     }
 
-    public void setStats(UUID videoId, long likes, long comments, long views) {
+    /** Applies counters only if they are newer than what is stored: events may arrive out of order. */
+    public void setStats(UUID videoId, long likes, long comments, long views, Instant computedAt) {
         db.sql("""
-                UPDATE feed.candidate_stats SET likes = :likes, comments = :comments, views = :views, as_of = now()
-                WHERE video_id = :id
+                UPDATE feed.candidate_stats SET likes = :likes, comments = :comments, views = :views, as_of = :at
+                WHERE video_id = :id AND as_of < :at
                 """)
-                .param("id", videoId).param("likes", likes).param("comments", comments).param("views", views).update();
+                .param("id", videoId).param("likes", likes).param("comments", comments).param("views", views)
+                .param("at", utc(computedAt)).update();
+    }
+
+    /** Ignored if the video is not a candidate (the table's foreign key needs one). */
+    public void addLike(UUID userId, UUID videoId) {
+        db.sql("""
+                INSERT INTO feed.user_likes (user_id, video_id)
+                SELECT :u, :v WHERE EXISTS (SELECT 1 FROM feed.candidates WHERE video_id = :v)
+                ON CONFLICT DO NOTHING
+                """).param("u", userId).param("v", videoId).update();
+    }
+
+    public void removeLike(UUID userId, UUID videoId) {
+        db.sql("DELETE FROM feed.user_likes WHERE user_id = :u AND video_id = :v")
+                .param("u", userId).param("v", videoId).update();
     }
 
     public void addFollow(UUID userId, UUID creatorId) {

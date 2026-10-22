@@ -274,3 +274,50 @@ select {
   margin-right: 5px;
   border-radius: 2px;
 }
+
+.actions {
+  margin-top: 8px;
+}
+
+button.toggle {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+
+button.toggle.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.comments {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+.comment-list,
+.replies {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.replies {
+  margin-left: 18px;
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+}
+
+.comment-list li,
+.replies li {
+  margin-bottom: 10px;
+}
+
+.comment-body {
+  white-space: pre-wrap;
+  word-break: break-word;
+}

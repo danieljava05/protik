@@ -220,7 +220,12 @@ export default function Home() {
       {accessToken && (
         <RankingSettings accessToken={accessToken} onResult={record} onSaved={() => setFeedVersion((v) => v + 1)} />
       )}
-      {accessToken && <Feed key={`${accessToken}-${feedVersion}`} accessToken={accessToken} onResult={record} />}
+      {accessToken && <Feed
+          key={`${accessToken}-${feedVersion}`}
+          accessToken={accessToken}
+          currentUserId={profile?.id ?? null}
+          onResult={record}
+        />}
 
       <section>
         <h2>Requests</h2>

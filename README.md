@@ -7,8 +7,8 @@
 ![Java 25](https://img.shields.io/badge/Java-25-informational)
 ![Spring Boot 4.1](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F)
 
-> **Status: pre-alpha.** The architecture is documented and the build
-> skeleton exists; no product features are written yet. No
+> **Status: pre-alpha.** Accounts, sessions, a transparent feed, follows and likes work and are
+> tested; video upload and processing, data saver, captions and moderation are not built yet. No
 > performance, cost or accuracy claim is made until it is measured, with
 > hardware and method stated. See the [roadmap](docs/ROADMAP.md).
 
@@ -66,6 +66,8 @@ Key decisions, each with rejected alternatives:
 - [ADR 0013](docs/adr/0013-rate-limiting.md): rate limiting for login and registration
 - [ADR 0014](docs/adr/0014-transparent-ranker.md): a pluggable ranker whose score is its own explanation
 - [ADR 0015](docs/adr/0015-feed-pipeline.md): the feed pipeline: pooled ranking, stable cursors, events
+- [ADR 0016](docs/adr/0016-social-and-engagement.md): follows, likes and counters across modules
+- [ADR 0017](docs/adr/0017-comments.md): comments: plain text, one level of replies, stable paging
 
 ## Engineering standards
 
@@ -116,14 +118,15 @@ disposable PostgreSQL 17 database with `PROTIK_TEST_DB_URL` (and `PROTIK_TEST_DB
 log in, call `/v1/me`, and see every request's status, correlation ID and error document.
 
 **Sample videos:** there is no upload yet, so to see the feed start the backend with
-`--protik.demo.seed=true`. This loads 48 sample entries into the feed's read model only (no real videos); it is
-off by default and must never be enabled in production.
+`--protik.demo.seed=true`. This creates 8 sample creators (no password, nobody can log in as them) and 48 sample
+videos (no files behind them) through each module's own tables and events, plus invented counters. It is off by
+default and must never be enabled in production.
 
 **What works today:** registration and login (Argon2id, 15-minute JWTs), rotating refresh tokens with
 theft detection, logout, login and registration rate limiting, a transparent feed (`GET /v1/feed`: ranked by your own modes
 and weights, each video explained, stable paging), idempotent retries,
-RFC 9457 errors, request correlation IDs, OpenAPI, the shared job queue. There is no video
-feature yet; see the [roadmap](docs/ROADMAP.md).
+RFC 9457 errors, request correlation IDs, OpenAPI, the shared job queue, follows, likes and comments with counters that
+stay accurate under load. There is no video upload yet; see the [roadmap](docs/ROADMAP.md).
 
 ## License
 

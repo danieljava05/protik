@@ -83,6 +83,40 @@ class FeedIndexerTests {
     }
 
     @Test
+    void anOlderCounterEventArrivingLateNeverOverwritesANewerOne() {
+        UUID id = UUID.randomUUID();
+        indexer.videoPublished(id, UUID.randomUUID(), "yo", Instant.now(), 9_000, Set.of());
+        Instant earlier = Instant.parse("2026-10-22T10:00:00Z");
+        Instant later = earlier.plusSeconds(5);
+
+        indexer.statsChanged(id, 50, 5, 500, later);    // the newer one is processed first...
+        indexer.statsChanged(id, 10, 1, 100, earlier);  // ...then the older one is delivered late
+
+        assertThat(db.sql("SELECT likes FROM feed.candidate_stats WHERE video_id = :id").param("id", id)
+                .query(Long.class).single()).as("the newer value wins").isEqualTo(50);
+        indexer.statsChanged(id, 50, 5, 500, later); // a repeat of the same event changes nothing
+        indexer.statsChanged(id, 70, 7, 700, later.plusSeconds(1));
+        assertThat(db.sql("SELECT likes FROM feed.candidate_stats WHERE video_id = :id").param("id", id)
+                .query(Long.class).single()).isEqualTo(70);
+    }
+
+    @Test
+    void likesOfVideosThatAreNotCandidatesAreIgnoredAndLikesAreRemovedWithTheirVideo() {
+        UUID viewer = UUID.randomUUID();
+        UUID stranger = UUID.randomUUID();
+        indexer.liked(viewer, stranger); // not a candidate: nothing to remember, and no error
+        assertThat(db.sql("SELECT count(*) FROM feed.user_likes").query(Long.class).single()).isZero();
+
+        UUID id = UUID.randomUUID();
+        indexer.videoPublished(id, UUID.randomUUID(), "yo", Instant.now(), 9_000, Set.of("x"));
+        indexer.liked(viewer, id);
+        indexer.liked(viewer, id); // repeat
+        assertThat(db.sql("SELECT count(*) FROM feed.user_likes").query(Long.class).single()).isEqualTo(1);
+        indexer.videoRemoved(id);
+        assertThat(db.sql("SELECT count(*) FROM feed.user_likes").query(Long.class).single()).as("goes with the video").isZero();
+    }
+
+    @Test
     void followsAreIdempotentAndYouCannotFollowYourself() {
         UUID a = UUID.randomUUID();
         UUID b = UUID.randomUUID();

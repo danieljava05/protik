@@ -50,9 +50,24 @@ export type FeedItem = {
   durationMs: number;
   language: string | null;
   score: number;
+  likes: number;
+  comments: number;
+  views: number;
+  liked: boolean;
+  followingCreator: boolean;
   explanation?: ExplanationLine[];
 };
 export type FeedPage = { asOf: string; mode: string; items: FeedItem[]; nextCursor: string | null };
+export type CommentItem = { id: string; authorId: string; body: string; createdAt: string; replyCount: number };
+export type CommentPage = { items: CommentItem[]; nextCursor: string | null };
+export type PostedComment = {
+  id: string;
+  videoId: string;
+  authorId: string;
+  parentId: string | null;
+  body: string;
+  createdAt: string;
+};
 export type Preferences = { mode: string; followedOnly: boolean; components: ComponentPreference[] };
 
 async function request<T>(path: string, init: RequestInit): Promise<ApiResult<T>> {
@@ -157,6 +172,47 @@ export function feed(accessToken: string, options: { cursor?: string | null; lim
   const query = new URLSearchParams({ limit: String(options.limit ?? 10), explain: String(options.explain ?? true) });
   if (options.cursor) query.set("cursor", options.cursor);
   return request<FeedPage>(`/v1/feed?${query}`, { headers: bearer(accessToken) });
+}
+
+/** PUT and DELETE are idempotent: repeating them is harmless, so the UI can retry freely. */
+export function setLike(accessToken: string, videoId: string, liked: boolean) {
+  return request<null>(`/v1/videos/${videoId}/like`, { method: liked ? "PUT" : "DELETE", headers: bearer(accessToken) });
+}
+
+export function setFollow(accessToken: string, userId: string, following: boolean) {
+  return request<null>(`/v1/users/${userId}/follow`, {
+    method: following ? "PUT" : "DELETE",
+    headers: bearer(accessToken),
+  });
+}
+
+export function comments(accessToken: string, videoId: string, cursor: string | null) {
+  const query = new URLSearchParams({ limit: "5" });
+  if (cursor) query.set("cursor", cursor);
+  return request<CommentPage>(`/v1/videos/${videoId}/comments?${query}`, { headers: bearer(accessToken) });
+}
+
+export function replies(accessToken: string, commentId: string) {
+  return request<CommentPage>(`/v1/comments/${commentId}/replies?limit=20`, { headers: bearer(accessToken) });
+}
+
+/** The Idempotency-Key makes a retry after a dropped connection post once, not twice. */
+export function postComment(
+  accessToken: string,
+  videoId: string,
+  body: string,
+  parentId: string | null,
+  idempotencyKey: string,
+) {
+  return request<PostedComment>(`/v1/videos/${videoId}/comments`, {
+    method: "POST",
+    headers: { ...json, ...bearer(accessToken), "Idempotency-Key": idempotencyKey },
+    body: JSON.stringify({ body, parentId }),
+  });
+}
+
+export function deleteComment(accessToken: string, commentId: string) {
+  return request<null>(`/v1/comments/${commentId}`, { method: "DELETE", headers: bearer(accessToken) });
 }
 
 export function me(accessToken: string) {

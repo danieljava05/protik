@@ -56,12 +56,12 @@ done and tested; what each one still does not handle is listed in
 - [ ] T4.3 Transcript search
 
 ## Milestone 5: Social, engagement, moderation
-- [ ] T5.1 Follows, likes, comments; counters with accuracy-under-load
-      test
+- [x] T5.1 Follows, likes, comments; counters with accuracy-under-load test
+      ([ADR 0016](adr/0016-social-and-engagement.md), [ADR 0017](adr/0017-comments.md))
 - [ ] T5.2 Reporting, takedown, audit log, account deletion that deletes
 
 ## Frontend harness
-- [x] Thin Next.js client: register (with idempotent retry), log in, call `/v1/me`, and a request
+- [x] Thin Next.js client (now also ranking settings, the feed with score bars, like/follow/comment): register (with idempotent retry), log in, call `/v1/me`, and a request
       log showing status, correlation ID, replay header and problem documents. Grows with each ticket
       that adds an endpoint worth exercising.
 

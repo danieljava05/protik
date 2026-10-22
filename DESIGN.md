@@ -20,6 +20,8 @@ violations or cycles (proven by a deliberate violation). Decisions so far:
 | Persistence with `JdbcClient` and explicit SQL, not JPA | [0010](docs/adr/0010-persistence-with-jdbcclient.md) |
 | Argon2id passwords, HS256 15-minute JWT access tokens, stateless, deny by default | [0011](docs/adr/0011-authentication.md) |
 | Feed: bounded pool ranked per request, cursor pinned to a moment and the settings, events via a persistent registry | [0015](docs/adr/0015-feed-pipeline.md) |
+| Follows/likes: existence via small public APIs, facts as events, counters recounted from a dirty set | [0016](docs/adr/0016-social-and-engagement.md) |
+| Comments: plain text, one reply level, keyset paging, idempotent post, real delete, per-user rate limit | [0017](docs/adr/0017-comments.md) |
 | `Ranker`: weighted sum of [0,1] components; the explanation is the score's own terms | [0014](docs/adr/0014-transparent-ranker.md) |
 | Rate limiting in PostgreSQL: reserve-then-refund, three login keys, hashed keys | [0013](docs/adr/0013-rate-limiting.md) |
 | Refresh tokens: random, hashed, rotated, reuse revokes the session, 10 s grace | [0012](docs/adr/0012-refresh-tokens-and-sessions.md) |
@@ -104,8 +106,37 @@ poison event stays in the registry without blocking others. Details in [ADR 0015
 
 **Measured** (`FeedPerformanceTests`: 20,000 candidates over 2,000 creators, 150 followed creators, local
 PostgreSQL 17, in-process MockMvc, 200 requests after warm-up, first page of 20, AMD A8-7410 4 cores, 14.9 GB,
-Java 25): **p50 40 ms, p95 57 ms, p99 72 ms**. This excludes the network, TLS and a real HTTP server, so it is a
-lower bound on what a client would see, not a latency claim.
+Java 25): **p50 39 to 40 ms, p95 57 to 68 ms, p99 72 to 110 ms** over two runs (the spread is run-to-run noise on a
+slow laptop). This excludes the network, TLS and a real HTTP server, so it is a lower bound on what a client would see,
+not a latency claim.
+
+## Follows, likes and counters (T5.1)
+
+`PUT/DELETE /v1/users/{id}/follow` and `PUT/DELETE /v1/videos/{id}/like` are idempotent (204 whether or not
+anything changed) and announce a change only when one really happened. Targets are checked through
+`AccountDirectory` (identity) and `VideoCatalog` (video), never by reading their tables. Counters are not
+incremented per like (a hot row, and unsafe under at-least-once delivery): each like marks its video in a tiny
+`dirty_counters` set, a refresher about once per second recounts those videos from the like rows, stores the
+counter and announces it as `VideoStatsChanged` (stamped with the time computed, so the feed ignores a stale
+one that arrives late). A crash re-queues the work because the dirty mark is removed in the same transaction as
+the update, and an hourly reconciliation recomputes everything from the truth and announces what it corrected.
+The feed keeps its own copies of follows, likes and counters from these events, and derives a viewer's interests
+from the tags of the videos they liked. Proven by tests including 300 users x 8 operations across 16 threads
+(every counter equals the like rows afterwards) and an end-to-end chain: follow and like through the API, feed
+reflects it. A test also caught a real bug: a scheduled method calling a transactional method on its own object
+skipped the transaction proxy, so events were stored but never delivered; the scheduling now lives in a separate
+bean. Details in [ADR 0016](docs/adr/0016-social-and-engagement.md).
+
+## Comments (T5.1)
+
+`POST /v1/videos/{id}/comments` (with `Idempotency-Key`, and at most 20 per user per minute), `GET /v1/videos/{id}/comments`
+(newest first), `GET /v1/comments/{id}/replies` (oldest first), `DELETE /v1/comments/{id}` (author only; replies go with it).
+Text is 1 to 2,200 characters (counted as people see them, so one emoji is one), plain, with control characters refused; it is
+stored exactly as given and never treated as markup, so clients must escape it. One level of replies; paging is by an opaque
+`(time, id)` cursor and stays stable when many comments share a timestamp. Adding or deleting announces
+`CommentCountChanged`; the engagement refresher recounts through social's `CommentCounts` and the total (replies included) reaches the
+feed. An hourly reconciliation also repairs comment counters. Rejected attempts count toward the posting limit. Details in
+[ADR 0017](docs/adr/0017-comments.md).
 
 ## Rate limiting (T1.5)
 
@@ -166,6 +197,10 @@ features and no authentication; every endpoint is open. Known gaps:
   revocation before expiry. HS256 with a shared secret; a lost secret lets anyone mint tokens.
   Registration reveals whether a username or email exists. **Do not deploy publicly before the
   account hardening in roadmap T1.6.**
+- Social: no cap on follows, no blocks or mutes, no follower/following lists (only the relationship is queryable),
+  no notifications, no editing of comments, no comment reactions or mentions, no spam or profanity detection, no moderator hide or
+  remove yet (T5.2). Counters lag a like or comment by about a second. A like that reaches the feed before the feed has indexed the video does not influence interests.
+  The demo counters are invented and the hourly reconciliation zeroes them.
 - Feed: **no real videos exist yet** (uploads are T1.3/T1.4), so it has only run on test data and the opt-in
   demo set. Nothing populates the follow graph, interests or engagement counters until the social and
   engagement modules exist, so FOLLOWING and TOPIC are 0 for everyone in practice. The ranker only sees the
