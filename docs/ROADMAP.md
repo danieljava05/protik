@@ -45,7 +45,8 @@ done and tested; what each one still does not handle is listed in
 
 ## Milestone 3: Data saver
 - [x] T3.1 Per-user monthly data budget and prefetch cap ([ADR 0018](adr/0018-data-budget.md))
-- [ ] T3.2 Reproducible MB-per-10-minutes benchmark, on and off
+- [x] T3.2 Reproducible MB-per-10-minutes benchmark, on and off ([results and caveats](benchmarks/README.md)).
+      Measured on one animated clip only; a representative clip set is still to do.
 
 ## Milestone 4: African-language captions
 - [ ] T4.1 Evaluation protocol and test sets (ADR 0004)
