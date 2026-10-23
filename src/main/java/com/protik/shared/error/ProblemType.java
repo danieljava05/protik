@@ -16,6 +16,8 @@ public enum ProblemType {
     FORBIDDEN("forbidden", HttpStatus.FORBIDDEN, "Forbidden"),
     NOT_FOUND("not-found", HttpStatus.NOT_FOUND, "Resource not found"),
     CONFLICT("conflict", HttpStatus.CONFLICT, "Conflict"),
+    PAYLOAD_TOO_LARGE("payload-too-large", HttpStatus.CONTENT_TOO_LARGE, "Payload too large"),
+    UNSUPPORTED_MEDIA("unsupported-media-type", HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type"),
     TOO_MANY_REQUESTS("too-many-attempts", HttpStatus.TOO_MANY_REQUESTS, "Too many attempts"),
     IDEMPOTENCY_KEY_REUSED("idempotency-key-reused", HttpStatus.UNPROCESSABLE_CONTENT,
             "Idempotency key reused for a different request"),

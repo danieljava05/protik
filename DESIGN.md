@@ -159,6 +159,14 @@ writes the audit row in the same transaction; the audit table is append-only by 
 marks the account pending and announces it, each module deletes its own data and acknowledges, and identity deletes the
 account when all five have. See [ADR 0019](docs/adr/0019-moderation.md) and [ADR 0020](docs/adr/0020-account-deletion.md).
 
+## Uploads and transcoding (T1.3, T1.4)
+`POST /v1/videos` creates a video; `PUT /v1/videos/{id}/content` streams the file (size-capped while writing, signature
+checked against the declared type) into a quarantine key and queues `video.process`. That job scans (ClamAV `INSTREAM`),
+probes (`ffprobe`), encodes each rendition no larger than the source plus audio only (`ffmpeg`, H.264/AAC, `+faststart`)
+and publishes in one transaction, after which the original is deleted. Files are served from
+`/v1/videos/{id}/renditions/{code}` with Range support. Deleted assets leave tombstones that a sweeper turns into deleted
+files, including when an account is deleted. See [ADR 0022](docs/adr/0022-uploads-and-transcoding.md).
+
 ## Rate limiting (T1.5)
 
 Login failures are counted per account+address (5 / 15 min), per account (20) and per address (100,
@@ -225,6 +233,17 @@ features and no authentication; every endpoint is open. Known gaps:
   no notifications, no editing of comments, no comment reactions or mentions, no spam or profanity detection, moderators can hide a comment but there is no restore.
   Counters lag a like or comment by about a second. A like that reaches the feed before the feed has indexed the video does not influence interests.
   The demo counters are invented and the hourly reconciliation zeroes them.
+- Uploads: **the file store is a directory on one machine; there is no S3/MinIO adapter**, no resumable upload (a dropped
+  connection restarts the file), no HLS or mid-playback quality switching, no per-person storage quota, and processing
+  happens on the API's machine. FFmpeg runs as a plain child process with limits and a timeout, **which is not a sandbox**:
+  a flaw in FFmpeg would run with the application's rights, so production must run the worker in a container or user with no
+  network, a read-only file system apart from its work directory, and CPU and memory limits (not done). The ClamAV client
+  was checked against a fake daemon locally and against a real daemon only in CI; clamd's `StreamMaxLength` must be at least
+  `protik.upload.max-bytes` or every large upload fails closed. `protik.scan.mode=disabled` skips scanning (the video is
+  marked `SKIPPED`, never clean) and must never be used in production. A video whose scanner stays down is never published,
+  and after the job's attempts run out it stays `PROCESSING` with a dead job for an operator. Encoding quality settings
+  (CRF 28, `veryfast`) are untuned. The ladder is tested on generated test pictures only, which are not representative
+  of real footage, so no storage or bandwidth claim is made from them.
 - Moderation: no API grants roles (a database operator inserts the first moderator), and a role change reaches the
   person's access token only at their next login or refresh (up to 15 minutes). No restore, no appeals, no automated
   detection, no legal procedure for child-safety reports (**a legal question to settle before launch**), no notification

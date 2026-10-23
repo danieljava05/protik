@@ -8,8 +8,9 @@
 ![Spring Boot 4.1](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F)
 
 > **Status: pre-alpha.** Accounts, sessions, a transparent feed, follows, likes, comments, a data
-> budget, reporting and moderation, and account deletion work and are tested; video upload and
-> processing and captions are not built yet. No
+> budget, reporting and moderation, account deletion, and video upload with malware scanning and
+> transcoding work and are tested; captions are not built yet, and a cloud file store, a real email
+> provider and an FFmpeg sandbox are still missing. No
 > performance, cost or accuracy claim is made until it is measured, with
 > hardware and method stated. See the [roadmap](docs/ROADMAP.md).
 

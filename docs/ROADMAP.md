@@ -29,17 +29,14 @@ done and tested; what each one still does not handle is listed in
 - [x] T1.5 Rate limiting for login and registration ([ADR 0013](adr/0013-rate-limiting.md))
 - [x] T1.6 Account hardening: common-password check, email verification, password reset
       ([ADR 0021](adr/0021-account-hardening.md)). **Still open: a real email provider, so nobody receives mail yet.**
-- [ ] T1.3 Presigned upload to MinIO, validation, `Idempotency-Key`.
-      Upload safety (an uploaded file is hostile until proven otherwise):
-      size and type limits at presign time; a quarantine bucket that
-      nothing serves; malware scan (ClamAV) before a file is released;
-      content sniffing that ignores the client-declared type; files are
-      never executed or served from the app's own origin
-- [ ] T1.4 Transcode job: 720p/360p, 144p, audio-only; measure storage
-      and compute cost per rendition
-      FFmpeg runs sandboxed: separate non-root container, no network,
-      CPU/memory/time limits, read-only input, and output re-encoded from
-      scratch (the original bytes are never republished)
+- [x] T1.3 Upload with validation, `Idempotency-Key`, quarantine, malware scan and content sniffing
+      ([ADR 0022](adr/0022-uploads-and-transcoding.md)). **Built as a streamed upload to a local file
+      store, not a presigned upload to MinIO** (no S3 here to test it); the storage is a port. The ClamAV
+      client is tested against a fake daemon locally and against a real one only in CI.
+- [x] T1.4 Transcode job: 144p, 240p, 480p, 720p (never above the source) and audio-only, as progressive MP4
+      with a thumbnail, using the real FFmpeg. **Not a sandbox**: production needs a container with no network
+      (see DESIGN.md). Storage and compute cost per rendition are measured in T3.2.
+      Open: S3/MinIO adapter, HLS, resumable uploads.
 
 ## Milestone 2: Transparent feed
 - [x] T2.1 `Ranker` interface and structured score components ([ADR 0014](adr/0014-transparent-ranker.md))

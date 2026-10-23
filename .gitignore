@@ -28,3 +28,6 @@ application-local.*
 *.log
 /data/
 /media/
+
+# Local object store used by the file-system adapter (ADR 0022)
+data/

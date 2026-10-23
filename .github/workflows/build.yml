@@ -12,6 +12,15 @@ jobs:
   verify:
     name: Build and test (Java 25)
     runs-on: ubuntu-latest
+    # A real ClamAV daemon, so the scanner client is checked against the real protocol (ADR 0022).
+    services:
+      clamav:
+        image: clamav/clamav:1.4
+        ports:
+          - 3310:3310
+    env:
+      PROTIK_REQUIRE_FFMPEG: "true"
+      PROTIK_CLAMD_HOST: localhost
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -19,6 +28,18 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
+      # Transcoding tests run the real ffmpeg; PROTIK_REQUIRE_FFMPEG makes a missing one fail rather than skip.
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      # clamd opens its port only after it has loaded its signature database, which takes a while.
+      - name: Wait for ClamAV
+        run: |
+          for i in $(seq 1 90); do
+            if (echo PING | timeout 3 nc -q1 localhost 3310 | grep -q PONG); then echo "ClamAV is ready"; exit 0; fi
+            sleep 5
+          done
+          echo "ClamAV did not become ready" >&2
+          exit 1
       # Runs unit tests and Spring Modulith boundary verification.
       - run: ./mvnw -B -ntp verify
 
