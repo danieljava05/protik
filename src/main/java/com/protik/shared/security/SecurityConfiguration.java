@@ -37,7 +37,8 @@ class SecurityConfiguration {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/v1/auth/register", "/v1/auth/login", "/v1/auth/refresh",
-                                "/v1/auth/logout").permitAll()
+                                "/v1/auth/logout", "/v1/auth/password-reset", "/v1/auth/password-reset/confirm",
+                                "/v1/auth/verify-email").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**", "/actuator/info",
                                 "/v3/api-docs", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // CORS preflight carries no token

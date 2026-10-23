@@ -41,7 +41,7 @@ class AccountDeletionIntegrationTests {
     static final Set<String> USER_COLUMNS = new TreeSet<>(Set.of(
             "identity.login_identifiers.account_id", "identity.password_credentials.account_id",
             "identity.profiles.account_id", "identity.session_families.account_id", "identity.account_roles.account_id",
-            "identity.deletion_requests.account_id",
+            "identity.deletion_requests.account_id", "identity.email_tokens.account_id",
             "video.videos.creator_id", "video.upload_sessions.creator_id",
             "feed.user_feed_settings.user_id", "feed.user_ranking_weights.user_id", "feed.usage_events.user_id",
             "feed.seen_videos.user_id", "feed.candidates.creator_id", "feed.following.user_id", "feed.following.creator_id",
@@ -107,6 +107,9 @@ class AccountDeletionIntegrationTests {
     /** Gives the user at least one row in every table that can hold their ID. */
     private void seedEverything() {
         givePassword(user, PASSWORD);
+        db.sql("INSERT INTO identity.email_tokens (id, account_id, purpose, token_hash, expires_at) "
+                + "VALUES (gen_random_uuid(), :u, 'RESET_PASSWORD', decode(md5(random()::text), 'hex'), now() + interval '1 hour')")
+                .param("u", user).update();
         db.sql("INSERT INTO identity.account_roles (account_id, role) VALUES (:u, 'MODERATOR')").param("u", user).update();
         db.sql("INSERT INTO identity.session_families (id, account_id) VALUES (gen_random_uuid(), :u)").param("u", user).update();
         db.sql("INSERT INTO video.upload_sessions (id, creator_id, video_id, storage_key, multipart_upload_id, content_type, "

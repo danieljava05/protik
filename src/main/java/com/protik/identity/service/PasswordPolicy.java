@@ -22,6 +22,9 @@ final class PasswordPolicy {
         if (password.equalsIgnoreCase(username) || password.equalsIgnoreCase(email)) {
             throw invalid("Password must not be the same as your username or email.");
         }
+        if (CommonPasswords.contains(password)) {
+            throw invalid("That password is on a list of commonly used passwords. Choose another.");
+        }
         if (password.isBlank()) {
             throw invalid("Password must not be blank.");
         }

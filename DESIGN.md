@@ -214,10 +214,13 @@ features and no authentication; every endpoint is open. Known gaps:
   (grace period rejects instead of re-issuing). Access tokens stay valid up to 15 minutes after
   logout or revocation. No device list, no device binding. Account suspension takes effect at the
   next refresh.
-- Authentication: no email verification, password reset, breached-password check, MFA, or token
-  revocation before expiry. HS256 with a shared secret; a lost secret lets anyone mint tokens.
-  Registration reveals whether a username or email exists. **Do not deploy publicly before the
-  account hardening in roadmap T1.6.**
+- Authentication: no MFA, no changing a password or email while signed in, no notification that a password
+  changed, and no token revocation before expiry. HS256 with a shared secret; a lost secret lets anyone mint tokens.
+  Registration reveals whether a username or email exists. Email verification and password reset work end to end in tests,
+  but **no email provider exists, so in any deployment nobody receives the mail** (`LoggingEmailSender` delivers nothing);
+  verification gates nothing yet. The common-password check is a bundled list of 9,126 passwords, not a breach database.
+  Reset hides whether an address has an account in what it answers, though a timing difference is possible.
+  **Choose a mail provider, sending domain (SPF, DKIM) and legal text before any public deployment.**
 - Social: no cap on follows, no blocks or mutes, no follower/following lists (only the relationship is queryable),
   no notifications, no editing of comments, no comment reactions or mentions, no spam or profanity detection, moderators can hide a comment but there is no restore.
   Counters lag a like or comment by about a second. A like that reaches the feed before the feed has indexed the video does not influence interests.

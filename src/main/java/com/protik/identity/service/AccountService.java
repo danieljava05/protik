@@ -23,13 +23,16 @@ public class AccountService {
     private final AccountRepository accounts;
     private final PasswordEncoder encoder;
     private final AccessThrottle throttle;
+    private final EmailTokenService emailTokens;
     /** Verified against when the account does not exist, so timing does not reveal that. */
     private final String dummyHash;
 
-    AccountService(AccountRepository accounts, PasswordEncoder encoder, AccessThrottle throttle) {
+    AccountService(AccountRepository accounts, PasswordEncoder encoder, AccessThrottle throttle,
+            EmailTokenService emailTokens) {
         this.accounts = accounts;
         this.encoder = encoder;
         this.throttle = throttle;
+        this.emailTokens = emailTokens;
         this.dummyHash = encoder.encode(UUID.randomUUID().toString());
     }
 
@@ -52,6 +55,7 @@ public class AccountService {
         } catch (DuplicateKeyException e) {
             throw conflictFor(e);
         }
+        emailTokens.sendVerification(id);
         return new Registered(id, username);
     }
 

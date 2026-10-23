@@ -27,8 +27,8 @@ done and tested; what each one still does not handle is listed in
 - [x] T1.2 Rotating refresh tokens with family revocation on reuse
       ([ADR 0012](adr/0012-refresh-tokens-and-sessions.md))
 - [x] T1.5 Rate limiting for login and registration ([ADR 0013](adr/0013-rate-limiting.md))
-- [ ] T1.6 Account hardening before any public deployment: breached-password check, email
-      verification, password reset (needs an email provider and a cost model)
+- [x] T1.6 Account hardening: common-password check, email verification, password reset
+      ([ADR 0021](adr/0021-account-hardening.md)). **Still open: a real email provider, so nobody receives mail yet.**
 - [ ] T1.3 Presigned upload to MinIO, validation, `Idempotency-Key`.
       Upload safety (an uploaded file is hostile until proven otherwise):
       size and type limits at presign time; a quarantine bucket that
