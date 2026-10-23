@@ -58,7 +58,8 @@ done and tested; what each one still does not handle is listed in
 ## Milestone 5: Social, engagement, moderation
 - [x] T5.1 Follows, likes, comments; counters with accuracy-under-load test
       ([ADR 0016](adr/0016-social-and-engagement.md), [ADR 0017](adr/0017-comments.md))
-- [ ] T5.2 Reporting, takedown, audit log, account deletion that deletes
+- [x] T5.2 Reporting, takedown, audit log, account deletion that deletes
+      ([ADR 0019](adr/0019-moderation.md), [ADR 0020](adr/0020-account-deletion.md))
 
 ## Frontend harness
 - [x] Thin Next.js client (now also ranking settings, the feed with score bars, like/follow/comment): register (with idempotent retry), log in, call `/v1/me`, and a request

@@ -61,6 +61,10 @@ class IdempotencyStore {
                 .optional();
     }
 
+    int deleteForScope(UUID scope) {
+        return db.sql("DELETE FROM shared.idempotency_keys WHERE user_id = :u").param("u", scope).update();
+    }
+
     int purgeExpired() {
         return db.sql("DELETE FROM shared.idempotency_keys WHERE expires_at < now()").update();
     }

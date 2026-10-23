@@ -55,6 +55,11 @@ public class IdempotencyService {
         }
     }
 
+    /** Forgets everything stored for one user's keys; part of account deletion (ADR 0020). */
+    public int forgetUser(UUID userId) {
+        return store.deleteForScope(userId);
+    }
+
     /**
      * @param scope      who owns the key (the user ID, or {@link #ANONYMOUS_SCOPE})
      * @param keyHeader  the raw {@code Idempotency-Key} header, or null if the client sent none

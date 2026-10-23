@@ -265,9 +265,11 @@ class SchemaTests {
     @Test
     void usageEventsLandInAPartition() {
         long rows = inRolledBackTx(c -> {
+            // Other suites leave usage rows behind, so look for this row only.
             c.sql("INSERT INTO feed.usage_events (id, user_id, video_id, rendition_code, bytes, occurred_at) "
                     + "VALUES (gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), '144p', 123456, now())").update();
-            return c.sql("SELECT count(*) FROM feed.usage_events_default").query(Long.class).single();
+            return c.sql("SELECT count(*) FROM feed.usage_events_default WHERE bytes = 123456 AND occurred_at > now() - interval '1 minute'")
+                    .query(Long.class).single();
         });
         assertThat(rows).isEqualTo(1);
     }

@@ -151,6 +151,14 @@ preload. Every feed page carries that advice (`dataPolicy`) and each item the es
 blocks playback**: it cannot see bytes object storage serves, so usage is reported by the app and the budget is
 advice. Usage older than 400 days is deleted. Details in [ADR 0018](docs/adr/0018-data-budget.md).
 
+## Moderation and account deletion (T5.2)
+Reports (video, comment, account) feed a queue ordered child safety first, then oldest first. A moderator's action
+(takedown, hide comment, suspend account, dismiss) changes the target through the owning module's small public API and
+writes the audit row in the same transaction; the audit table is append-only by trigger. Roles are rows in
+`identity.account_roles` carried in the access token's `roles` claim. Account deletion is a coordinated protocol: identity
+marks the account pending and announces it, each module deletes its own data and acknowledges, and identity deletes the
+account when all five have. See [ADR 0019](docs/adr/0019-moderation.md) and [ADR 0020](docs/adr/0020-account-deletion.md).
+
 ## Rate limiting (T1.5)
 
 Login failures are counted per account+address (5 / 15 min), per account (20) and per address (100,
@@ -211,9 +219,18 @@ features and no authentication; every endpoint is open. Known gaps:
   Registration reveals whether a username or email exists. **Do not deploy publicly before the
   account hardening in roadmap T1.6.**
 - Social: no cap on follows, no blocks or mutes, no follower/following lists (only the relationship is queryable),
-  no notifications, no editing of comments, no comment reactions or mentions, no spam or profanity detection, no moderator hide or
-  remove yet (T5.2). Counters lag a like or comment by about a second. A like that reaches the feed before the feed has indexed the video does not influence interests.
+  no notifications, no editing of comments, no comment reactions or mentions, no spam or profanity detection, moderators can hide a comment but there is no restore.
+  Counters lag a like or comment by about a second. A like that reaches the feed before the feed has indexed the video does not influence interests.
   The demo counters are invented and the hourly reconciliation zeroes them.
+- Moderation: no API grants roles (a database operator inserts the first moderator), and a role change reaches the
+  person's access token only at their next login or refresh (up to 15 minutes). No restore, no appeals, no automated
+  detection, no legal procedure for child-safety reports (**a legal question to settle before launch**), no notification
+  to the reporter or the reported person. Two moderators acting on the same report are serialized by a row lock, the second
+  gets 409.
+- Account deletion: asynchronous; an access token issued before the request works for up to 15 minutes, so something
+  written in that window after a module finished may survive. Stored files, captions and assets are not covered because
+  they do not exist yet. The completeness test finds forgotten tables by column name only. No data export, no cooling-off
+  period, backups are out of reach. Comments others wrote on a deleted person's video are not deleted with it.
 - Data budget: usage is reported by the app and unverified, so a dishonest app only misleads its own user; nothing is
   enforced server-side; size estimates are upper bounds from the bitrate ladder, not measurements (until T1.4); no
   Wi-Fi versus mobile distinction; `feed.usage_events` has only its default partition (no monthly partition

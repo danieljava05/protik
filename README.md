@@ -7,8 +7,9 @@
 ![Java 25](https://img.shields.io/badge/Java-25-informational)
 ![Spring Boot 4.1](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F)
 
-> **Status: pre-alpha.** Accounts, sessions, a transparent feed, follows and likes work and are
-> tested; video upload and processing, data saver, captions and moderation are not built yet. No
+> **Status: pre-alpha.** Accounts, sessions, a transparent feed, follows, likes, comments, a data
+> budget, reporting and moderation, and account deletion work and are tested; video upload and
+> processing and captions are not built yet. No
 > performance, cost or accuracy claim is made until it is measured, with
 > hardware and method stated. See the [roadmap](docs/ROADMAP.md).
 
