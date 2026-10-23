@@ -1,0 +1,77 @@
+# A deployment layout that runs FFmpeg where it cannot reach the internet (ADR 0022 decision 3).
+# NOT run in the environment where this was written (Docker was unavailable): validate it before relying on it.
+#
+#   JWT_SECRET=$(openssl rand -base64 48) DB_PASSWORD=... docker compose -f deploy/docker-compose.yml up --build
+#
+# The two networks are the point:
+#   edge     reaches the internet; only the API is on it.
+#   backend  "internal: true": no route out. The worker, which runs FFmpeg on files strangers uploaded, the
+#            database and ClamAV live here, so a flaw in FFmpeg cannot phone home or fetch a second stage.
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: protik
+      POSTGRES_USER: protik
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U protik -d protik"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  clamav:
+    image: clamav/clamav:1.4
+    networks: [backend]
+    environment:
+      # Must be at least protik.upload.max-bytes, or large uploads fail closed.
+      CLAMD_CONF_StreamMaxLength: 250M
+
+  api:
+    build: { context: .., dockerfile: deploy/Dockerfile }
+    image: protik:local
+    environment: &app-env
+      DB_URL: jdbc:postgresql://postgres:5432/protik
+      DB_USER: protik
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (32+ bytes)}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?set CORS_ALLOWED_ORIGINS}
+      PROTIK_SCAN_MODE: clamd
+      PROTIK_SCAN_HOST: clamav
+      PROTIK_JOBS_ENABLED: "false"        # the API only enqueues; the worker does the heavy work
+    depends_on: { postgres: { condition: service_healthy } }
+    networks: [edge, backend]
+    ports: ["8080:8080"]
+    volumes: [objects:/data/objects]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  worker:
+    image: protik:local
+    environment:
+      <<: *app-env
+      PROTIK_JOBS_ENABLED: "true"
+    depends_on: { postgres: { condition: service_healthy }, clamav: { condition: service_started }, api: { condition: service_started } }
+    networks: [backend]                    # no route to the internet
+    volumes: [objects:/data/objects]
+    read_only: true                        # only /tmp (below) and the object store are writable
+    tmpfs: ["/tmp:size=2g"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    mem_limit: 3g
+    cpus: 2.0
+
+networks:
+  edge: {}
+  backend:
+    internal: true
+
+volumes:
+  pgdata: {}
+  objects: {}

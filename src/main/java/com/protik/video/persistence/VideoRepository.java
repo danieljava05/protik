@@ -30,6 +30,12 @@ public class VideoRepository {
                 .query(Boolean.class).single();
     }
 
+    /** True only after the language's word error rate has been measured and published (ADR 0004). */
+    public boolean asrSupported(String code) {
+        return db.sql("SELECT COALESCE((SELECT asr_supported FROM video.languages WHERE code = :c), false)")
+                .param("c", code).query(Boolean.class).single();
+    }
+
     public void insertUploading(UUID id, UUID creatorId, String description, String language) {
         db.sql("INSERT INTO video.videos (id, creator_id, description, spoken_language, status) "
                         + "VALUES (:id, :creator, :description, :language, 'UPLOADING')")

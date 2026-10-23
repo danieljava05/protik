@@ -167,6 +167,13 @@ and publishes in one transaction, after which the original is deleted. Files are
 `/v1/videos/{id}/renditions/{code}` with Range support. Deleted assets leave tombstones that a sweeper turns into deleted
 files, including when an account is deleted. See [ADR 0022](docs/adr/0022-uploads-and-transcoding.md).
 
+## Captions and transcript search (T4.1-T4.3)
+Creators upload WebVTT for their own videos; cues are stored as plain-text segments with a rendered `.vtt` file, and
+search runs over them with `unaccent` + the `simple` text-search configuration, so "omo" finds "ọmọ". Machine captions go
+through a `Transcriber` port and a job that does nothing unless the language's `asr_supported` flag is set, which requires a
+measured word error rate. An `Evaluation` tool computes WER and CER under both diacritic policies with bootstrap intervals.
+See [ADR 0023](docs/adr/0023-captions-and-transcript-search.md).
+
 ## Rate limiting (T1.5)
 
 Login failures are counted per account+address (5 / 15 min), per account (20) and per address (100,
@@ -244,6 +251,11 @@ features and no authentication; every endpoint is open. Known gaps:
   and after the job's attempts run out it stays `PROCESSING` with a dead job for an operator. Encoding quality settings
   (CRF 28, `veryfast`) are untuned. The ladder is tested on generated test pictures only, which are not representative
   of real footage, so no storage or bandwidth claim is made from them.
+- Captions: **no speech recognition model exists, no ASR test set has been chosen, and no word error rate has been
+  measured for any language**, so no machine caption is ever produced and the project makes no accuracy claim. Search
+  matches whole words only (no prefix or fuzzy matching), returns at most 50 results and has no paging, ranking is the
+  database's default untuned, and Nigerian Pidgin spelling variation is not handled. Caption and search text is plain text
+  that clients must escape.
 - Moderation: no API grants roles (a database operator inserts the first moderator), and a role change reaches the
   person's access token only at their next login or refresh (up to 15 minutes). No restore, no appeals, no automated
   detection, no legal procedure for child-safety reports (**a legal question to settle before launch**), no notification

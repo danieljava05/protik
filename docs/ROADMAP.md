@@ -49,9 +49,12 @@ done and tested; what each one still does not handle is listed in
       Measured on one animated clip only; a representative clip set is still to do.
 
 ## Milestone 4: African-language captions
-- [ ] T4.1 Evaluation protocol and test sets (ADR 0004)
-- [ ] T4.2 Captions table and ASR job step; baseline WER per language
-- [ ] T4.3 Transcript search
+- [~] T4.1 Evaluation protocol and test sets (ADR 0004). **Tooling built and tested** (normaliser, WER/CER, both diacritic
+      policies, bootstrap intervals, failure gallery; [ADR 0023](adr/0023-captions-and-transcript-search.md)).
+      **Not done: no test set chosen or licence-checked, so nothing has been measured.**
+- [~] T4.2 Captions table and ASR job step. **Creator captions (WebVTT) and the guarded machine-caption job are built.**
+      **Not done: no model, no baseline WER for any language; `asr_supported` is false everywhere, so no machine caption is made.**
+- [x] T4.3 Transcript search (accent-insensitive, published videos only)
 
 ## Milestone 5: Social, engagement, moderation
 - [x] T5.1 Follows, likes, comments; counters with accuracy-under-load test

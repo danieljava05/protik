@@ -2,6 +2,7 @@ package com.protik.video.processing;
 
 import com.protik.shared.id.Ids;
 import com.protik.shared.job.JobContext;
+import com.protik.shared.job.JobQueue;
 import com.protik.shared.job.JobHandler;
 import com.protik.video.Rendition;
 import com.protik.video.RenditionCatalog;
@@ -51,10 +52,11 @@ class ProcessVideoJob implements JobHandler {
     private final ApplicationEventPublisher events;
     private final TransactionTemplate transaction;
     private final JsonMapper json;
+    private final JobQueue jobs;
 
     ProcessVideoJob(VideoRepository videos, ObjectStorage storage, MalwareScanner scanner, MediaTools tools,
             RenditionCatalog renditions, UploadProperties upload, ApplicationEventPublisher events,
-            PlatformTransactionManager transactions, JsonMapper json) {
+            PlatformTransactionManager transactions, JsonMapper json, JobQueue jobs) {
         this.videos = videos;
         this.storage = storage;
         this.scanner = scanner;
@@ -64,6 +66,7 @@ class ProcessVideoJob implements JobHandler {
         this.events = events;
         this.transaction = new TransactionTemplate(transactions);
         this.json = json;
+        this.jobs = jobs;
     }
 
     @Override
@@ -171,6 +174,10 @@ class ProcessVideoJob implements JobHandler {
                 videos.deleteAsset(videoId, "ORIGINAL"); // the quarantined file is recorded as a tombstone and swept
                 events.publishEvent(new VideoPublished(videoId, row.creatorId(), now, probe.durationMs(), row.language(),
                         videos.tags(videoId)));
+                // Machine captions only for languages whose error rate has been measured (ADR 0004, ADR 0023).
+                if (row.language() != null && videos.asrSupported(row.language())) {
+                    jobs.enqueue("video.caption", "{\"videoId\":\"" + videoId + "\"}");
+                }
             }
         });
     }
