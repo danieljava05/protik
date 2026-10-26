@@ -42,6 +42,11 @@ services:
       PROTIK_SCAN_MODE: clamd
       PROTIK_SCAN_HOST: clamav
       PROTIK_JOBS_ENABLED: "false"        # the API only enqueues; the worker does the heavy work
+      # Real mail needs a provider: set these and PROTIK_MAIL_SENDER=smtp, PROTIK_MAIL_FROM, PROTIK_MAIL_LINK_BASE (https).
+      # SPRING_MAIL_HOST: smtp.example.com
+      # SPRING_MAIL_PORT: "587"
+      # SPRING_MAIL_USERNAME / SPRING_MAIL_PASSWORD / SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"
+      # PROTIK_BOOTSTRAP_MODERATORS: ada
     depends_on: { postgres: { condition: service_healthy } }
     networks: [edge, backend]
     ports: ["8080:8080"]

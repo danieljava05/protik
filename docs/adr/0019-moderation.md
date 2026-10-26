@@ -17,8 +17,10 @@ visibility, a comment, an account) without reaching into their tables.
 
 A new `identity.account_roles` table holds `MODERATOR` and `ADMIN` grants. Access tokens carry them in a `roles` claim and
 the security layer maps the claim to authorities; `/v1/moderation/**` requires `ROLE_MODERATOR` (an `ADMIN` is also a
-moderator). There is **no API to grant roles yet**: the first moderator is added by a database operator, which is
-documented. A role change takes effect at the user's next login or refresh, because the access token (15 minutes) is the
+moderator). There is **no API to grant roles yet**. The operator names existing accounts in `protik.bootstrap.moderators` (comma separated
+usernames, e.g. `PROTIK_BOOTSTRAP_MODERATORS=ada,chinedu`) and restarts; each grant is logged at WARN, unknown or inactive
+usernames are reported and never created, repeats change nothing, and removing a name does not revoke the role (revoking is a
+deliberate database operation). A role change takes effect at the user's next login or refresh, because the access token (15 minutes) is the
 carrier; removing a role can therefore take up to 15 minutes to bite, an accepted and documented limit.
 
 *Rejected: looking roles up on every request.* A database read per request for a rarely used capability.

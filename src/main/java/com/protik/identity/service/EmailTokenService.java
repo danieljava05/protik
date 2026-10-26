@@ -150,7 +150,7 @@ public class EmailTokenService {
                 sender.send(message);
             } catch (RuntimeException e) {
                 // A failed send must not undo an account or reveal itself to the caller; the person can ask again.
-                log.warn("Sending a {} mail failed: {}", kind, e.toString());
+                log.warn("Sending a {} mail failed ({}); the person can ask again", kind, e.getClass().getSimpleName());
             }
         });
     }

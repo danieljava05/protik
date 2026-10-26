@@ -232,7 +232,7 @@ features and no authentication; every endpoint is open. Known gaps:
 - Authentication: no MFA, no changing a password or email while signed in, no notification that a password
   changed, and no token revocation before expiry. HS256 with a shared secret; a lost secret lets anyone mint tokens.
   Registration reveals whether a username or email exists. Email verification and password reset work end to end in tests,
-  but **no email provider exists, so in any deployment nobody receives the mail** (`LoggingEmailSender` delivers nothing);
+  and an SMTP sender exists (`protik.mail.sender=smtp`, tested against an in-process SMTP server) but **no provider or sending domain is configured, so by default nobody receives the mail** (`LoggingEmailSender` delivers nothing) and delivery to real inboxes is unverified;
   verification gates nothing yet. The common-password check is a bundled list of 9,126 passwords, not a breach database.
   Reset hides whether an address has an account in what it answers, though a timing difference is possible.
   **Choose a mail provider, sending domain (SPF, DKIM) and legal text before any public deployment.**
@@ -256,7 +256,7 @@ features and no authentication; every endpoint is open. Known gaps:
   matches whole words only (no prefix or fuzzy matching), returns at most 50 results and has no paging, ranking is the
   database's default untuned, and Nigerian Pidgin spelling variation is not handled. Caption and search text is plain text
   that clients must escape.
-- Moderation: no API grants roles (a database operator inserts the first moderator), and a role change reaches the
+- Moderation: no API grants roles (the operator names the first moderators in `protik.bootstrap.moderators`; revoking is a manual database operation), and a role change reaches the
   person's access token only at their next login or refresh (up to 15 minutes). No restore, no appeals, no automated
   detection, no legal procedure for child-safety reports (**a legal question to settle before launch**), no notification
   to the reporter or the reported person. Two moderators acting on the same report are serialized by a row lock, the second

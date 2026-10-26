@@ -65,3 +65,19 @@ size catches the worst choices only. It is not a breach database, and the README
 ## What this does not handle
 Multi-factor authentication, changing a password or email while signed in, notifying the person that their password changed,
 resetting by phone number, delivery bounces and retries, a large breach corpus, and rate limits per account beyond those above.
+
+## Addendum: SMTP delivery (2026-10-26)
+
+`protik.mail.sender=smtp` sends through any SMTP server configured with Spring's `spring.mail.*` (host, port, credentials, TLS).
+`protik.mail.from` is required, and `protik.mail.link-base` must be `https` (plain `http` only for `localhost`), because the link
+is a credential. The default stays `log`, which delivers nothing. With `smtp` selected and no mail server configured, startup
+fails rather than silently dropping mail. The recipient must be one plain address (no whitespace, comma, semicolon, angle
+bracket or quote), so a header-injection attempt fails before any message is built. Mail is plain text, UTF-8, marked
+`Auto-Submitted`. A failed send is logged by exception class only (never the address) and never undoes the request.
+
+Two dependencies were added, as AGENTS.md requires written justification: `spring-boot-starter-mail` (Spring's own JavaMail
+integration, instead of a hand-written SMTP client) and `greenmail-junit5` (test scope: a real SMTP server inside the test
+JVM, so the sender is tested against the actual protocol and not a mock).
+
+**Verified:** against GreenMail, including the whole path (register, receive, open the link). **Not verified:** any real
+provider, TLS negotiation, a sending domain (SPF, DKIM, DMARC) or deliverability. Those need an account and a domain.

@@ -1,9 +1,10 @@
 package com.protik.identity.service;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -11,11 +12,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @EnableConfigurationProperties({SessionProperties.class, ThrottleProperties.class, MailProperties.class})
 class IdentityConfiguration {
 
-    /** Delivers nothing until a real provider is chosen (ADR 0021 decision 2); tests and a future provider replace it. */
+    /** Delivers nothing (the default); tests and the smtp sender replace it (ADR 0021). */
     @Bean
-    @ConditionalOnMissingBean(EmailSender.class)
+    @ConditionalOnProperty(name = "protik.mail.sender", havingValue = "log", matchIfMissing = true)
     EmailSender emailSender(MailProperties mail) {
         return new LoggingEmailSender(mail.logLinks());
+    }
+
+    /** Real delivery through spring.mail.*; startup fails if no mail server is configured, rather than silently dropping mail. */
+    @Bean
+    @ConditionalOnProperty(name = "protik.mail.sender", havingValue = "smtp")
+    EmailSender smtpEmailSender(JavaMailSender mailSender, MailProperties mail) {
+        return new SmtpEmailSender(mailSender, mail.from());
     }
 
     /**
