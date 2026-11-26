@@ -24,7 +24,7 @@
 
     <properties>
         <java.version>25</java.version>
-        <spring-modulith.version>2.1.1</spring-modulith.version>
+        <spring-modulith.version>2.2.0</spring-modulith.version>
         <springdoc.version>3.1.1</springdoc.version>
         <!-- Argon2 implementation used by Spring Security's Argon2PasswordEncoder -->
         <bouncycastle.version>1.86</bouncycastle.version>
